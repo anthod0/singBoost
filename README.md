@@ -1,6 +1,6 @@
 # SingBoost
 
-SingBoost 是一个极简 Windows 托盘启动器，用于管理同目录下的 `sing-box.exe`。
+SingBoost 是一个纯粹的 windows sing-box 内核启动器，提供托盘图标、日志查看和开机自启功能。
 
 ## 功能
 
@@ -9,19 +9,28 @@ SingBoost 是一个极简 Windows 托盘启动器，用于管理同目录下的 
 - Windows 系统托盘图标
 - 设置开机自启
 
+## 非目标
+
+- 不生成、修改 sing-box 配置
+- 不解析节点
+- 不内置 sing-box 内核
+
+## 前置条件
+
+- 自行获取完整的 sing-box 配置。
+- sing-box.exe
+- wintun.dll（如果使用 tun 模式）。
+
 ## 目标目录结构
 
 将 `singboost.exe` 放到 sing-box 所在目录：
 
 ```text
-D:\Program Files\sing-box\
+<app_dir>\
   singboost.exe
-  singboost.toml
   sing-box.exe
   wintun.dll
   config.json
-  logs\
-    singboost-runtime.log
 ```
 
 首次运行时，如果 `singboost.toml` 不存在，SingBoost 会自动创建默认配置。
@@ -94,47 +103,3 @@ SingBoost
 ```
 
 当 `run_as_admin = true` 时，任务会尝试以最高权限运行。
-
-## 构建
-
-安装 Windows target：
-
-```bash
-rustup target add x86_64-pc-windows-msvc
-```
-
-常用验证命令：
-
-```bash
-cargo fmt --check
-cargo check
-cargo test
-cargo check --target x86_64-pc-windows-msvc
-```
-
-构建 Windows 版本：
-
-```bash
-cargo build --release --target x86_64-pc-windows-msvc
-```
-
-输出文件通常位于：
-
-```text
-target\x86_64-pc-windows-msvc\release\singboost.exe
-```
-
-## 平台说明
-
-SingBoost 仅面向 Windows。非 Windows 平台可运行核心测试，但应用本体不会提供托盘功能。
-
-## 非目标
-
-SingBoost 不做以下事情：
-
-- 不生成 sing-box 配置。
-- 不编辑 `config.json`。
-- 不管理订阅。
-- 不解析节点。
-- 不替代 Clash API UI。
-- 不内置 sing-box 或 wintun.dll。
