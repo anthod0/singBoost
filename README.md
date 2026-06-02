@@ -66,7 +66,7 @@ start_command = 'sing-box.exe -D "<app_dir>" -c "<app_dir>\config.json" run'
 
 - `启动` / `停止`：启动或停止 sing-box。
 - `重启`：仅在 sing-box 运行中可用。
-- `打开 UI`：从 sing-box `config.json` 的 `experimental.clash_api.external_controller` 解析 WebUI 地址并打开 `/ui/`；例如 `0.0.0.0:20123` 会打开 `http://127.0.0.1:20123/ui/`。
+- `打开 UI`：打开配置文件中的Web UI。
 - `日志`：打开 PowerShell 窗口实时跟踪 `logs\singboost-runtime.log`。
 - `以管理员身份运行`：切换管理员权限配置。
 - `开机自启`：创建或删除 Windows 任务计划。
@@ -86,20 +86,4 @@ SingBoost 每次启动时会重建：
 - sing-box stderr
 - SingBoost 自身事件和错误
 
-点击托盘菜单 `日志` 会执行类似命令：
-
-```powershell
-Get-Content "<app_dir>\logs\singboost-runtime.log" -Wait
-```
-
-## 开机自启
-
-SingBoost 使用 Windows 任务计划程序，而不是注册表 Run 项。
-
-任务名：
-
-```text
-SingBoost
-```
-
-当 `run_as_admin = true` 时，任务会尝试以最高权限运行。
+点击托盘菜单 `日志` 可以查看实时日志输出。
