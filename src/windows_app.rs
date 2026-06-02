@@ -2,7 +2,7 @@
 
 use singboost::{
     AppConfig, AppPaths, AppState, KernelCommand, RuntimeLog, ensure_config_file, load_config,
-    validate_preflight_files,
+    resolve_web_ui_url, validate_preflight_files,
 };
 use std::error::Error;
 use std::io::{BufRead, BufReader};
@@ -25,7 +25,6 @@ const LOG_ID: &str = "log";
 const ADMIN_ID: &str = "admin";
 const AUTOSTART_ID: &str = "autostart";
 const EXIT_ID: &str = "exit";
-const UI_URL: &str = "http://127.0.0.1:20123/ui/";
 const TASK_NAME: &str = "SingBoost";
 
 pub fn run() -> Result<(), Box<dyn Error>> {
@@ -115,11 +114,14 @@ impl TrayApp {
                 AppState::Stopped | AppState::Error => self.start_kernel(),
             },
             RESTART_ID => self.restart_kernel(),
-            OPEN_UI_ID => {
-                if let Err(err) = open::that(UI_URL) {
-                    self.error(&format!("failed to open UI: {err}"));
+            OPEN_UI_ID => match resolve_web_ui_url(&self.paths) {
+                Ok(url) => {
+                    if let Err(err) = open::that(&url) {
+                        self.error(&format!("failed to open UI {url}: {err}"));
+                    }
                 }
-            }
+                Err(err) => self.error(&format!("failed to resolve UI URL: {err}")),
+            },
             LOG_ID => self.open_log_window(),
             ADMIN_ID => self.toggle_admin(),
             AUTOSTART_ID => self.toggle_autostart(),
