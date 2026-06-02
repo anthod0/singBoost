@@ -1,12 +1,15 @@
-use singboost::{AppPaths, KernelCommand};
+#[cfg(windows)]
+mod windows_app;
 
+#[cfg(windows)]
 fn main() {
-    let paths = AppPaths::from_current_exe().expect("failed to resolve application directory");
-    let run_command = KernelCommand::run(&paths);
+    if let Err(err) = windows_app::run() {
+        eprintln!("SingBoost failed: {err}");
+        std::process::exit(1);
+    }
+}
 
-    println!(
-        "SingBoost initialized. Kernel command: {} {}",
-        run_command.program.display(),
-        run_command.args.join(" ")
-    );
+#[cfg(not(windows))]
+fn main() {
+    eprintln!("SingBoost is a Windows-only tray launcher.");
 }
