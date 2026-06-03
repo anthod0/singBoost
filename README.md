@@ -54,13 +54,7 @@ run_as_admin = false
 start_command = 'sing-box.exe -D . -c config.json run'
 ```
 
-Optional remote config download settings can be added by editing `boost.toml` manually:
-
-```toml
-[subscription]
-url = "https://example.com/config.json"
-target = "config.json"
-```
+To enable remote config download, uncomment and fill the `[subscription]` example in `boost.toml`.
 
 ## Tray Menu
 

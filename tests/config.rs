@@ -17,7 +17,12 @@ fn creates_default_config_when_missing() {
     assert!(content.contains("run_as_admin = false"));
     assert!(content.contains("[sing_box]"));
     assert!(content.contains("start_command = 'sing-box.exe -D . -c config.json run'"));
-    assert!(!content.contains("[subscription]"));
+    assert!(content.contains("# 可选：下载远程完整 sing-box 配置。"));
+    assert!(content.contains("# 在这里填写地址后，使用托盘菜单：配置 -> 下载远程配置"));
+    assert!(content.contains("# [subscription]"));
+    assert!(content.contains("# url = \"https://example.com/config.json\""));
+    assert!(content.contains("# target = \"config.json\""));
+    assert!(!content.contains("\n[subscription]"));
 }
 
 #[test]

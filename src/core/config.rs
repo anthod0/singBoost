@@ -33,7 +33,13 @@ impl AppConfig {
             "[app]\n",
             "run_as_admin = false\n\n",
             "[sing_box]\n",
-            "start_command = 'sing-box.exe -D . -c config.json run'\n",
+            "start_command = 'sing-box.exe -D . -c config.json run'\n\n",
+            "# 可选：下载远程完整 sing-box 配置。\n",
+            "# 在这里填写地址后，使用托盘菜单：配置 -> 下载远程配置\n",
+            "#\n",
+            "# [subscription]\n",
+            "# url = \"https://example.com/config.json\"\n",
+            "# target = \"config.json\"\n",
         )
     }
 }
