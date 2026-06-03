@@ -75,6 +75,14 @@ fn kernel_unexpected_exit_is_detected_and_reported_to_users() {
         "The tray event loop should detect a sing-box process that exits after successful spawn"
     );
     assert!(
+        tray_app.contains("Duration::from_secs(1)"),
+        "Running sing-box should be polled at a conservative one-second interval"
+    );
+    assert!(
+        tray_app.contains("ControlFlow::Wait") && tray_app.contains("self.kernel.is_some()"),
+        "When sing-box is not running, the tray app should wait for menu events instead of polling"
+    );
+    assert!(
         tray_app.contains("sing-box 已异常退出"),
         "Unexpected sing-box exits should show a Chinese user-facing popup"
     );

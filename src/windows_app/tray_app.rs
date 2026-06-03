@@ -69,7 +69,11 @@ impl TrayApp {
         }));
 
         event_loop.run(move |event, _, control_flow| {
-            *control_flow = ControlFlow::WaitUntil(Instant::now() + Duration::from_millis(500));
+            if self.kernel.is_some() {
+                *control_flow = ControlFlow::WaitUntil(Instant::now() + Duration::from_secs(1));
+            } else {
+                *control_flow = ControlFlow::Wait;
+            }
             match event {
                 Event::NewEvents(StartCause::Init) => {}
                 Event::UserEvent(UserEvent::Menu(event)) => self.handle_menu(event.id().clone()),
