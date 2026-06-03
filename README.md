@@ -1,28 +1,30 @@
 # SingBoost
 
-SingBoost 是一个纯粹的 windows sing-box 内核启动器，提供托盘图标、日志查看和开机自启功能。
+SingBoost is a minimal Windows launcher for the sing-box core. It provides a system tray icon, log viewing, Web UI opening, startup on login, and optional administrator privileges.
 
-## 功能
+## Features
 
-- 启动/停止 sing-box 内核
-- 查看运行日志
-- Windows 系统托盘图标
-- 设置开机自启
+- Start/stop the sing-box core
+- View runtime logs
+- Windows system tray icon
+- Open the sing-box Web UI
+- Configure startup on login
+- Optionally run SingBoost, and therefore the sing-box child process, as administrator
 
-## 非目标
+## Non-goals
 
-- 不生成、修改 sing-box 配置
-- 不解析节点
-- 不内置 sing-box 内核
+- Does not generate or modify sing-box configuration
+- Does not parse proxy nodes
+- Does not bundle the sing-box core
 
-## 前置条件
+## Prerequisites
 
-- 自行获取完整的 sing-box 配置。
-- sing-box.exe
+- A complete sing-box configuration prepared by the user
+- `sing-box.exe`
 
-## 目标目录结构
+## Target Directory Layout
 
-将 `singboost.exe` 放到 sing-box 所在目录：
+Place `singboost.exe` in the same directory as `sing-box.exe`:
 
 ```text
 <app_dir>\
@@ -31,17 +33,17 @@ SingBoost 是一个纯粹的 windows sing-box 内核启动器，提供托盘图�
   config.json
 ```
 
-首次运行时，如果 `boost.toml` 不存在，SingBoost 会自动创建默认配置。
+On first launch, if `boost.toml` does not exist, SingBoost creates a default configuration file automatically.
 
-## 配置文件
+## Configuration File
 
-配置文件路径：
+Configuration file path:
 
 ```text
 <app_dir>\boost.toml
 ```
 
-默认内容：
+Default content:
 
 ```toml
 [app]
@@ -51,81 +53,81 @@ run_as_admin = false
 start_command = 'sing-box.exe -D . -c config.json run'
 ```
 
-说明：
+Notes:
 
-- `run_as_admin = true` 时，SingBoost 启动后会通过 UAC 重新拉起自身。
-- `start_command` 可以由用户自定义。
-- 如果配置文件已存在但 TOML 无法解析、字段缺失或 `start_command` 为空，SingBoost 不会启动 sing-box。
+- When `run_as_admin = true`, SingBoost relaunches itself through UAC after startup.
+- The sing-box child process inherits the current SingBoost process privileges.
+- `start_command` can be customized by the user.
+- If the configuration file already exists but its TOML cannot be parsed, required fields are missing, or `start_command` is empty, SingBoost will not start sing-box.
 
-## 托盘菜单
+## Tray Menu
 
-右键托盘图标可使用：
+Right-click the tray icon to access:
 
-- `启动` / `启动中...` / `停止`：启动、显示启动中状态或停止 sing-box；启动中会禁用该菜单项，避免重复启动。
-- `重启`：仅在 sing-box 运行中可用。
-- `打开 UI`：打开配置文件中的Web UI。
-- `日志`：打开 PowerShell 窗口实时跟踪 `logs\singboost-runtime.log`。
-- `以管理员身份运行`：切换管理员权限配置。
-- `开机自启`：创建或删除 Windows 任务计划。
-- `退出`：停止 sing-box、关闭由 SingBoost 打开的日志窗口并退出。
+- Start / Starting... / Stop: start sing-box, show the starting state, or stop sing-box. The menu item is disabled while starting to avoid duplicate launches.
+- Restart: available only while sing-box is running.
+- Open UI: open the Web UI from `config.json` at `experimental.clash_api.external_controller`.
+- Logs: open a PowerShell window that tails `logs\singboost-runtime.log` in real time.
+- Run as administrator: toggle the administrator privilege setting.
+- Startup on login: create or remove the Windows Task Scheduler startup task.
+- Exit: stop sing-box, close log windows opened by SingBoost, and exit.
 
-## 日志
+## Logs
 
-SingBoost 每次启动时会重建：
+SingBoost recreates this file each time it starts:
 
 ```text
 <app_dir>\logs\singboost-runtime.log
 ```
 
-日志来源包括：
+Log sources include:
 
 - sing-box stdout
 - sing-box stderr
-- SingBoost 自身事件和错误
+- SingBoost events and errors
 
-点击托盘菜单 `日志` 可以查看实时日志输出。
+Click Logs in the tray menu to view live log output.
 
-## 编译
+## Build
 
-### Windows 本机编译
+### Native Windows Build
 
-开发构建：
+Development build:
 
 ```powershell
 cargo build
 ```
 
-Release 构建：
+Release build:
 
 ```powershell
 cargo build --release
 ```
 
-编译产物：
+Build artifacts:
 
 ```text
 target\debug\singboost.exe
 target\release\singboost.exe
 ```
 
-正式使用建议使用 `target\release\singboost.exe`。
+For normal use, prefer `target\release\singboost.exe`.
 
-### Linux/macOS 编译说明
+### Linux/macOS Build Notes
 
-项目的托盘功能仅支持 Windows。在非 Windows 平台直接编译时，只会得到一个提示程序，不是实际可用的 Windows 托盘启动器。
+The tray application is supported only on Windows. Building directly on non-Windows platforms only produces a placeholder program, not a usable Windows tray launcher.
 
-如需在 Linux 上交叉编译 Windows exe，可安装 Windows target 后构建：
+To cross-compile a Windows executable on Linux, install the Windows target and build:
 
 ```bash
 rustup target add x86_64-pc-windows-gnu
 cargo build --release --target x86_64-pc-windows-gnu
 ```
 
-产物路径：
+Artifact path:
 
 ```text
 target/x86_64-pc-windows-gnu/release/singboost.exe
 ```
 
-更推荐在 Windows 上编译和验证托盘、任务计划、管理员权限等行为。
-
+Building and verifying tray behavior, Task Scheduler integration, and administrator privilege behavior on Windows is recommended.
