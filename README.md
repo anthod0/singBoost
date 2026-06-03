@@ -87,3 +87,48 @@ SingBoost 每次启动时会重建：
 - SingBoost 自身事件和错误
 
 点击托盘菜单 `日志` 可以查看实时日志输出。
+
+## 编译
+
+### Windows 本机编译
+
+开发构建：
+
+```powershell
+cargo build
+```
+
+Release 构建：
+
+```powershell
+cargo build --release
+```
+
+编译产物：
+
+```text
+target\debug\singboost.exe
+target\release\singboost.exe
+```
+
+正式使用建议使用 `target\release\singboost.exe`。
+
+### Linux/macOS 编译说明
+
+项目的托盘功能仅支持 Windows。在非 Windows 平台直接编译时，只会得到一个提示程序，不是实际可用的 Windows 托盘启动器。
+
+如需在 Linux 上交叉编译 Windows exe，可安装 Windows target 后构建：
+
+```bash
+rustup target add x86_64-pc-windows-gnu
+cargo build --release --target x86_64-pc-windows-gnu
+```
+
+产物路径：
+
+```text
+target/x86_64-pc-windows-gnu/release/singboost.exe
+```
+
+更推荐在 Windows 上编译和验证托盘、任务计划、管理员权限等行为。
+
