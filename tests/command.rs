@@ -51,6 +51,7 @@ fn invalid_sing_box_start_command_returns_error() {
     let config = AppConfig {
         run_as_admin: false,
         start_command: r#""sing-box.exe -D . -c config.json run"#.to_string(),
+        subscription: None,
     };
 
     let error = KernelCommand::run(&paths, &config).unwrap_err();

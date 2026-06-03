@@ -6,6 +6,7 @@ pub(crate) const START_STOP_ID: &str = "start_stop";
 pub(crate) const RESTART_ID: &str = "restart";
 pub(crate) const OPEN_UI_ID: &str = "open_ui";
 pub(crate) const LOG_ID: &str = "log";
+pub(crate) const REMOTE_CONFIG_ID: &str = "remote_config";
 pub(crate) const ADMIN_ID: &str = "admin";
 pub(crate) const AUTOSTART_ID: &str = "autostart";
 pub(crate) const ABOUT_ID: &str = "about";
@@ -25,6 +26,7 @@ pub(crate) fn create_menu(run_as_admin: bool, autostart: bool) -> (Menu, TrayMen
     let restart = MenuItem::with_id(RESTART_ID, "重启", false, None);
     let open_ui = MenuItem::with_id(OPEN_UI_ID, "打开 UI", true, None);
     let log = MenuItem::with_id(LOG_ID, "日志", true, None);
+    let remote_config = MenuItem::with_id(REMOTE_CONFIG_ID, "远程配置...", true, None);
     let admin = CheckMenuItem::with_id(ADMIN_ID, "以管理员身份运行", true, run_as_admin, None);
     let autostart = CheckMenuItem::with_id(AUTOSTART_ID, "开机自启", true, autostart, None);
     let about = MenuItem::with_id(ABOUT_ID, "关于", true, None);
@@ -35,6 +37,8 @@ pub(crate) fn create_menu(run_as_admin: bool, autostart: bool) -> (Menu, TrayMen
         &restart,
         &open_ui,
         &log,
+        &separator,
+        &remote_config,
         &separator,
         &admin,
         &autostart,

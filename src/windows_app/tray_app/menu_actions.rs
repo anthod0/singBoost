@@ -2,12 +2,18 @@ use super::TrayApp;
 use super::config::write_config;
 use crate::windows_app::autostart::{autostart_enabled, remove_autostart, set_autostart};
 use crate::windows_app::elevation::{is_elevated, relaunch_elevated};
+use crate::windows_app::error_dialog::{confirm, show_error};
 use crate::windows_app::process::terminate_child;
 use crate::windows_app::show_info;
+use crate::windows_app::subscription_dialog::show_subscription_dialog;
 use crate::windows_app::tray_menu::{
-    ABOUT_ID, ADMIN_ID, AUTOSTART_ID, EXIT_ID, LOG_ID, OPEN_UI_ID, RESTART_ID, START_STOP_ID,
+    ABOUT_ID, ADMIN_ID, AUTOSTART_ID, EXIT_ID, LOG_ID, OPEN_UI_ID, REMOTE_CONFIG_ID, RESTART_ID,
+    START_STOP_ID,
 };
-use singboost::{AppState, resolve_web_ui_url};
+use singboost::{
+    AppState, SubscriptionConfig, download_subscription, load_config, resolve_subscription_target,
+    resolve_web_ui_url, save_subscription_url,
+};
 use std::error::Error;
 use std::process::Command;
 use tray_icon::menu::MenuId;
@@ -23,6 +29,7 @@ impl TrayApp {
             RESTART_ID => self.restart_kernel(),
             OPEN_UI_ID => self.open_web_ui(),
             LOG_ID => self.open_log_window(),
+            REMOTE_CONFIG_ID => self.configure_remote_config(),
             ADMIN_ID => self.toggle_admin(),
             AUTOSTART_ID => self.toggle_autostart(),
             ABOUT_ID => self.show_about(),
@@ -40,6 +47,79 @@ impl TrayApp {
                 }
             }
             Err(err) => self.error(&format!("打开 UI 失败：无法解析 UI 地址：{err}")),
+        }
+    }
+
+    fn configure_remote_config(&mut self) {
+        let initial_url = self
+            .config
+            .subscription
+            .as_ref()
+            .and_then(|subscription| subscription.url.as_deref())
+            .unwrap_or("");
+        let Some(url) = show_subscription_dialog(initial_url) else {
+            return;
+        };
+        let url = url.trim();
+        if url.is_empty() {
+            show_error("订阅地址不能为空。");
+            return;
+        }
+        let target = self
+            .config
+            .subscription
+            .as_ref()
+            .and_then(|subscription| subscription.target.clone());
+        let target_path = match resolve_subscription_target(&self.paths, target.as_deref()) {
+            Ok(target_path) => target_path,
+            Err(err) => {
+                let message = format!("远程配置目标无效：{err}");
+                self.log(&message);
+                show_error(&message);
+                return;
+            }
+        };
+        if target_path.exists()
+            && !confirm(
+                "确认覆盖",
+                &format!(
+                    "目标文件 {} 已存在，是否覆盖？",
+                    target_path.to_string_lossy()
+                ),
+            )
+        {
+            return;
+        }
+        if let Err(err) = save_subscription_url(&self.paths, url) {
+            let message = format!("保存远程配置失败：{err}");
+            self.log(&message);
+            show_error(&message);
+            return;
+        }
+        self.config = match load_config(&self.paths) {
+            Ok(config) => config,
+            Err(err) => {
+                let message = format!("重新读取配置失败：{err}");
+                self.log(&message);
+                show_error(&message);
+                return;
+            }
+        };
+        let subscription = self
+            .config
+            .subscription
+            .clone()
+            .unwrap_or(SubscriptionConfig {
+                url: Some(url.to_string()),
+                target,
+            });
+        match download_subscription(&self.paths, &subscription) {
+            Ok(target) => self.log(&format!("远程配置已下载：{}", target.to_string_lossy())),
+            Err(err) => {
+                let message = format!("下载远程配置失败：{err}");
+                self.log(&message);
+                show_error(&message);
+            }
         }
     }
 

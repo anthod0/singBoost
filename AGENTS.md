@@ -2,13 +2,13 @@
 
 SingBoost is a minimal Windows tray launcher for the sing-box core, implemented in Rust.
 
-- Main features: start/stop the colocated `sing-box.exe`, tray menu, log viewing, open Web UI, startup on login, and optional administrator privileges.
-- Non-goals: do not generate, modify, or parse node configuration; do not bundle the sing-box core.
+- Main features: start/stop the colocated `sing-box.exe`, tray menu, log viewing, open Web UI, startup on login, optional administrator privileges, and explicit remote complete-config download.
+- Non-goals: do not generate, parse, or convert node configuration; do not bundle the sing-box core.
 - Windows is the primary target platform; no non-Windows application is provided.
 
 ## Rules
 
-- Do not generate, modify, or rewrite the user's `config.json`.
+- Do not generate, parse, or convert the user's `config.json`. The only allowed write to a sing-box config file is an explicit user-triggered remote complete-config download after overwrite confirmation.
 - Keep README, AGENTS.md, and the code implementation consistent.
 - Be conservative with user configuration: critical application configuration is read from `boost.toml`; do not fallback for missing/invalid configuration. Only check whether the config file is missing during application startup, and create a default config file if it is missing.
 
