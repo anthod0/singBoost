@@ -10,21 +10,23 @@ mod tray_menu;
 
 pub(crate) use error_dialog::{show_error, show_info};
 
-use singboost::{AppPaths, ensure_config_file, load_config};
+use singboost::{AppPaths, ensure_config_file, ensure_state_file, load_config, load_state_config};
 use std::error::Error;
 use tray_app::TrayApp;
 
 pub fn run() -> Result<(), Box<dyn Error>> {
     let paths = AppPaths::from_current_exe()?;
     ensure_config_file(&paths)?;
+    ensure_state_file(&paths)?;
     let config = load_config(&paths)?;
+    let state_config = load_state_config(&paths)?;
 
-    if config.run_as_admin && !elevation::is_elevated() {
+    if state_config.run_as_admin && !elevation::is_elevated() {
         elevation::relaunch_elevated(&paths)?;
         return Ok(());
     }
 
     let _single_instance = single_instance::acquire()?;
-    let app = TrayApp::new(paths, config)?;
+    let app = TrayApp::new(paths, config, state_config)?;
     app.run();
 }

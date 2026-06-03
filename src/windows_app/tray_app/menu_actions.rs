@@ -1,5 +1,4 @@
 use super::TrayApp;
-use super::config::write_config;
 use crate::windows_app::autostart::{autostart_enabled, remove_autostart, set_autostart};
 use crate::windows_app::elevation::{is_elevated, relaunch_elevated};
 use crate::windows_app::error_dialog::{confirm, show_error};
@@ -11,6 +10,7 @@ use crate::windows_app::tray_menu::{
 };
 use singboost::{
     AppState, download_subscription, load_config, resolve_subscription_target, resolve_web_ui_url,
+    save_state_config,
 };
 use std::error::Error;
 use std::process::Command;
@@ -158,14 +158,14 @@ impl TrayApp {
     }
 
     fn toggle_admin(&mut self) {
-        let enabled = !self.config.run_as_admin;
-        self.config.run_as_admin = enabled;
-        if let Err(err) = write_config(&self.paths, &self.config) {
-            self.error(&format!("写入配置失败：{err}"));
+        let enabled = !self.state_config.run_as_admin;
+        self.state_config.run_as_admin = enabled;
+        if let Err(err) = save_state_config(&self.paths, &self.state_config) {
+            self.error(&format!("写入状态失败：{err}"));
             return;
         }
         if autostart_enabled() {
-            if let Err(err) = set_autostart(&self.paths, self.config.run_as_admin) {
+            if let Err(err) = set_autostart(&self.paths, self.state_config.run_as_admin) {
                 self.error(&format!(
                     "管理员运行配置已更新，但同步开机自启任务失败：{err}。请重新切换“开机自启”，或检查 Windows 任务计划。"
                 ));
@@ -182,7 +182,7 @@ impl TrayApp {
             if let Err(err) = remove_autostart() {
                 self.error(&format!("关闭开机自启失败：{err}"));
             }
-        } else if let Err(err) = set_autostart(&self.paths, self.config.run_as_admin) {
+        } else if let Err(err) = set_autostart(&self.paths, self.state_config.run_as_admin) {
             self.error(&format!("启用开机自启失败：{err}"));
         }
     }

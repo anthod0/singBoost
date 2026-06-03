@@ -147,7 +147,7 @@ fn admin_toggle_reports_autostart_sync_failures() {
         "When admin mode changes, failures to update the existing scheduled task must not be ignored"
     );
     assert!(
-        !tray_app.contains("let _ = set_autostart(&self.paths, self.config.run_as_admin);"),
+        !tray_app.contains("let _ = set_autostart(&self.paths, self.state_config.run_as_admin);"),
         "Autostart synchronization errors after toggling admin mode should not be discarded"
     );
 }

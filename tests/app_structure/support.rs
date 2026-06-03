@@ -1,7 +1,6 @@
 pub(crate) fn read_tray_app_sources() -> String {
     [
         "src/windows_app/tray_app.rs",
-        "src/windows_app/tray_app/config.rs",
         "src/windows_app/tray_app/kernel.rs",
         "src/windows_app/tray_app/menu_actions.rs",
         "src/windows_app/tray_app/ui_state.rs",

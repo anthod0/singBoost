@@ -34,7 +34,7 @@ Place `singboost.exe` in the same directory as `sing-box.exe`:
   config.json
 ```
 
-On first launch, if `boost.toml` does not exist, SingBoost creates a default configuration file automatically.
+On first launch, SingBoost creates `boost.toml` and `boost.state.toml` automatically if they do not exist.
 
 ## Configuration File
 
@@ -47,12 +47,17 @@ Configuration file path:
 Default content:
 
 ```toml
-[app]
-run_as_admin = false
-
 [sing_box]
 start_command = 'sing-box.exe -D . -c config.json run'
 ```
+
+Application-managed state file path:
+
+```text
+<your_app_dir>\boost.state.toml
+```
+
+`boost.state.toml` stores tray-managed preferences such as `run_as_admin` and may be rewritten by SingBoost.
 
 To enable remote config download, uncomment and fill the `[subscription]` example in `boost.toml`.
 

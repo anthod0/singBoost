@@ -1,11 +1,10 @@
-mod config;
 mod kernel;
 mod menu_actions;
 mod ui_state;
 
 use crate::windows_app::autostart::autostart_enabled;
 use crate::windows_app::tray_menu::{TrayMenu, create_icon, create_menu};
-use singboost::{AppConfig, AppPaths, AppState, RuntimeLog};
+use singboost::{AppConfig, AppPaths, AppState, AppStateConfig, RuntimeLog};
 use std::error::Error;
 use std::process::Child;
 use std::sync::{Arc, Mutex};
@@ -18,6 +17,7 @@ use tray_icon::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIc
 pub(crate) struct TrayApp {
     paths: AppPaths,
     config: AppConfig,
+    state_config: AppStateConfig,
     state: AppState,
     runtime_log: Arc<Mutex<RuntimeLog>>,
     kernel: Option<Child>,
@@ -27,12 +27,16 @@ pub(crate) struct TrayApp {
 }
 
 impl TrayApp {
-    pub(crate) fn new(paths: AppPaths, config: AppConfig) -> Result<Self, Box<dyn Error>> {
+    pub(crate) fn new(
+        paths: AppPaths,
+        config: AppConfig,
+        state_config: AppStateConfig,
+    ) -> Result<Self, Box<dyn Error>> {
         let mut runtime_log = RuntimeLog::recreate(&paths)?;
         runtime_log.append_event("SingBoost started")?;
         let runtime_log = Arc::new(Mutex::new(runtime_log));
 
-        let (menu, tray_menu) = create_menu(config.run_as_admin, autostart_enabled());
+        let (menu, tray_menu) = create_menu(state_config.run_as_admin, autostart_enabled());
         let tray = TrayIconBuilder::new()
             .with_menu(Box::new(menu))
             .with_menu_on_left_click(false)
@@ -44,6 +48,7 @@ impl TrayApp {
         let mut app = Self {
             paths,
             config,
+            state_config,
             state: AppState::Stopped,
             runtime_log,
             kernel: None,

@@ -29,6 +29,10 @@ impl AppPaths {
         self.child("boost.toml")
     }
 
+    pub fn state_toml(&self) -> PathBuf {
+        self.child("boost.state.toml")
+    }
+
     pub fn sing_box_exe(&self) -> PathBuf {
         self.child("sing-box.exe")
     }

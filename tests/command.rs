@@ -49,7 +49,6 @@ fn sing_box_run_command_matches_spec() {
 fn invalid_sing_box_start_command_returns_error() {
     let paths = AppPaths::new(PathBuf::from(r"D:\Program Files\sing-box"));
     let config = AppConfig {
-        run_as_admin: false,
         start_command: r#""sing-box.exe -D . -c config.json run"#.to_string(),
         subscription: None,
     };

@@ -25,7 +25,7 @@ impl TrayApp {
                 self.menu.open_ui.set_enabled(false);
             }
         }
-        self.menu.admin.set_checked(self.config.run_as_admin);
+        self.menu.admin.set_checked(self.state_config.run_as_admin);
         self.menu.autostart.set_checked(autostart_enabled());
     }
 

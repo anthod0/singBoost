@@ -6,9 +6,13 @@ use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AppConfig {
-    pub run_as_admin: bool,
     pub start_command: String,
     pub subscription: Option<SubscriptionConfig>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AppStateConfig {
+    pub run_as_admin: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -20,7 +24,6 @@ pub struct SubscriptionConfig {
 impl AppConfig {
     pub fn default_for_app_dir(_app_dir: &Path) -> Self {
         Self {
-            run_as_admin: false,
             start_command: "sing-box.exe -D . -c config.json run".to_string(),
             subscription: None,
         }
@@ -28,8 +31,6 @@ impl AppConfig {
 
     pub fn default_toml() -> &'static str {
         concat!(
-            "[app]\n",
-            "run_as_admin = false\n\n",
             "[sing_box]\n",
             "start_command = 'sing-box.exe -D . -c config.json run'\n\n",
             "# 可选：下载远程完整 sing-box 配置。\n",
@@ -48,7 +49,7 @@ pub enum ConfigError {
     Read(#[from] io::Error),
     #[error("failed to parse TOML: {0}")]
     Parse(#[from] toml::de::Error),
-    #[error("missing app.run_as_admin")]
+    #[error("missing state run_as_admin")]
     MissingRunAsAdmin,
     #[error("missing sing_box.start_command")]
     MissingStartCommand,
@@ -58,13 +59,12 @@ pub enum ConfigError {
 
 #[derive(Debug, Deserialize)]
 struct RawConfig {
-    app: Option<RawAppConfig>,
     sing_box: Option<RawSingBoxConfig>,
     subscription: Option<RawSubscriptionConfig>,
 }
 
 #[derive(Debug, Deserialize)]
-struct RawAppConfig {
+struct RawStateConfig {
     run_as_admin: Option<bool>,
 }
 
@@ -87,13 +87,17 @@ pub fn ensure_config_file(paths: &AppPaths) -> io::Result<()> {
     Ok(())
 }
 
+pub fn ensure_state_file(paths: &AppPaths) -> io::Result<()> {
+    let state_path = paths.state_toml();
+    if !state_path.exists() {
+        std::fs::write(state_path, "run_as_admin = false\n")?;
+    }
+    Ok(())
+}
+
 pub fn load_config(paths: &AppPaths) -> Result<AppConfig, ConfigError> {
     let text = std::fs::read_to_string(paths.config_toml())?;
     let raw: RawConfig = toml::from_str(&text)?;
-    let run_as_admin = raw
-        .app
-        .and_then(|app| app.run_as_admin)
-        .ok_or(ConfigError::MissingRunAsAdmin)?;
     let start_command = raw
         .sing_box
         .and_then(|sing_box| sing_box.start_command)
@@ -106,8 +110,21 @@ pub fn load_config(paths: &AppPaths) -> Result<AppConfig, ConfigError> {
         target: subscription.target,
     });
     Ok(AppConfig {
-        run_as_admin,
         start_command,
         subscription,
     })
+}
+
+pub fn load_state_config(paths: &AppPaths) -> Result<AppStateConfig, ConfigError> {
+    let text = std::fs::read_to_string(paths.state_toml())?;
+    let raw: RawStateConfig = toml::from_str(&text)?;
+    let run_as_admin = raw.run_as_admin.ok_or(ConfigError::MissingRunAsAdmin)?;
+    Ok(AppStateConfig { run_as_admin })
+}
+
+pub fn save_state_config(paths: &AppPaths, config: &AppStateConfig) -> io::Result<()> {
+    std::fs::write(
+        paths.state_toml(),
+        format!("run_as_admin = {}\n", config.run_as_admin),
+    )
 }

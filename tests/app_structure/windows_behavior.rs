@@ -41,7 +41,7 @@ fn windows_app_rejects_duplicate_instances_after_elevation_handoff() {
     let single_instance =
         std::fs::read_to_string("src/windows_app/single_instance.rs").unwrap_or_default();
 
-    let elevation_check = "if config.run_as_admin && !elevation::is_elevated()";
+    let elevation_check = "if state_config.run_as_admin && !elevation::is_elevated()";
     let single_instance_check = "single_instance::acquire()";
     assert!(
         windows_mod.contains("mod single_instance;"),
