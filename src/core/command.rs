@@ -32,8 +32,8 @@ impl KernelCommand {
     }
 
     pub fn run(paths: &AppPaths, config: &AppConfig) -> Self {
-        let expanded = config.expanded_start_command(&paths.app_dir());
-        spawn_command_line(&expanded, &paths.app_dir()).expect("validated start command")
+        spawn_command_line(&config.start_command, &paths.app_dir())
+            .expect("validated start command")
     }
 }
 

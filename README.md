@@ -50,12 +50,11 @@ SingBoost 是一个纯粹的 windows sing-box 内核启动器，提供托盘图�
 run_as_admin = false
 
 [sing_box]
-start_command = 'sing-box.exe -D "<app_dir>" -c "<app_dir>\config.json" run'
+start_command = 'sing-box.exe -D . -c config.json run'
 ```
 
 说明：
 
-- `<app_dir>` 会在运行时替换为 `singboost.exe` 所在目录。
 - `run_as_admin = true` 时，SingBoost 启动后会通过 UAC 重新拉起自身。
 - `start_command` 可以由用户自定义。
 - 如果配置文件已存在但 TOML 无法解析、字段缺失或 `start_command` 为空，SingBoost 不会启动 sing-box。

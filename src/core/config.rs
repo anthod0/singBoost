@@ -14,8 +14,7 @@ impl AppConfig {
     pub fn default_for_app_dir(_app_dir: &Path) -> Self {
         Self {
             run_as_admin: false,
-            start_command: r#"sing-box.exe -D "<app_dir>" -c "<app_dir>\config.json" run"#
-                .to_string(),
+            start_command: "sing-box.exe -D . -c config.json run".to_string(),
         }
     }
 
@@ -24,13 +23,8 @@ impl AppConfig {
             "[app]\n",
             "run_as_admin = false\n\n",
             "[sing_box]\n",
-            "start_command = 'sing-box.exe -D \"<app_dir>\" -c \"<app_dir>\\config.json\" run'\n",
+            "start_command = 'sing-box.exe -D . -c config.json run'\n",
         )
-    }
-
-    pub fn expanded_start_command(&self, app_dir: &Path) -> String {
-        self.start_command
-            .replace("<app_dir>", &app_dir.to_string_lossy())
     }
 }
 

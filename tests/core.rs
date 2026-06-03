@@ -125,9 +125,9 @@ fn sing_box_run_command_matches_spec() {
         command.args,
         vec![
             "-D".to_string(),
-            r"D:\Program Files\sing-box".to_string(),
+            ".".to_string(),
             "-c".to_string(),
-            r"D:\Program Files\sing-box\config.json".to_string(),
+            "config.json".to_string(),
             "run".to_string(),
         ]
     );
@@ -144,9 +144,7 @@ fn creates_default_config_when_missing() {
     assert!(content.contains("[app]"));
     assert!(content.contains("run_as_admin = false"));
     assert!(content.contains("[sing_box]"));
-    assert!(content.contains(
-        "start_command = 'sing-box.exe -D \"<app_dir>\" -c \"<app_dir>\\config.json\" run'"
-    ));
+    assert!(content.contains("start_command = 'sing-box.exe -D . -c config.json run'"));
 }
 
 #[test]
@@ -180,14 +178,11 @@ fn rejects_empty_start_command() {
 }
 
 #[test]
-fn expands_app_dir_placeholder_in_start_command() {
+fn default_start_command_uses_relative_paths() {
     let paths = AppPaths::new(PathBuf::from(r"D:\Program Files\sing-box"));
     let config = AppConfig::default_for_app_dir(&paths.app_dir());
 
-    assert_eq!(
-        config.expanded_start_command(&paths.app_dir()),
-        r#"sing-box.exe -D "D:\Program Files\sing-box" -c "D:\Program Files\sing-box\config.json" run"#
-    );
+    assert_eq!(config.start_command, "sing-box.exe -D . -c config.json run");
 }
 
 #[test]
