@@ -62,8 +62,6 @@ url = "https://example.com/config.json"
 target = "config.json"
 ```
 
-`target` is optional and defaults to `config.json`. SingBoost only downloads the remote file when you explicitly use the remote config dialog and confirm overwriting an existing target file.
-
 ## Tray Menu
 
 Left-click the tray icon to open the Web UI.

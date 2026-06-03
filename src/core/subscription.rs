@@ -3,12 +3,15 @@ use crate::core::paths::{AppPaths, append_child, looks_like_windows_path};
 use std::path::{Component, Path, PathBuf};
 use thiserror::Error;
 
-const DEFAULT_TARGET: &str = "config.json";
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 #[derive(Debug, Error)]
 pub enum SubscriptionError {
     #[error("subscription URL is empty")]
     EmptyUrl,
+    #[error("subscription target is missing")]
+    MissingTarget,
     #[error("subscription target is empty")]
     EmptyTarget,
     #[error("subscription target must be a relative path inside the application directory: {0}")]
@@ -25,7 +28,7 @@ pub fn resolve_subscription_target(
     paths: &AppPaths,
     target: Option<&str>,
 ) -> Result<PathBuf, SubscriptionError> {
-    let target = target.unwrap_or(DEFAULT_TARGET).trim();
+    let target = target.ok_or(SubscriptionError::MissingTarget)?.trim();
     if target.is_empty() {
         return Err(SubscriptionError::EmptyTarget);
     }
@@ -73,6 +76,8 @@ fn download_body(url: &str) -> Result<Vec<u8>, SubscriptionError> {
 
 #[cfg(windows)]
 fn download_body(url: &str) -> Result<Vec<u8>, SubscriptionError> {
+    use std::os::windows::process::CommandExt;
+
     let output = std::process::Command::new("powershell.exe")
         .args([
             "-NoProfile",
@@ -80,6 +85,7 @@ fn download_body(url: &str) -> Result<Vec<u8>, SubscriptionError> {
             "$url=$env:SINGBOOST_SUBSCRIPTION_URL; $bytes=(New-Object System.Net.WebClient).DownloadData($url); [Console]::OpenStandardOutput().Write($bytes,0,$bytes.Length)",
         ])
         .env("SINGBOOST_SUBSCRIPTION_URL", url)
+        .creation_flags(CREATE_NO_WINDOW)
         .output()
         .map_err(|err| SubscriptionError::Download(err.to_string()))?;
     if output.status.success() {

@@ -11,8 +11,8 @@ use crate::windows_app::tray_menu::{
     START_STOP_ID,
 };
 use singboost::{
-    AppState, SubscriptionConfig, download_subscription, load_config, resolve_subscription_target,
-    resolve_web_ui_url, save_subscription_url,
+    AppState, download_subscription, load_config, resolve_subscription_target, resolve_web_ui_url,
+    save_subscription_url,
 };
 use std::error::Error;
 use std::process::Command;
@@ -65,31 +65,6 @@ impl TrayApp {
             show_error("订阅地址不能为空。");
             return;
         }
-        let target = self
-            .config
-            .subscription
-            .as_ref()
-            .and_then(|subscription| subscription.target.clone());
-        let target_path = match resolve_subscription_target(&self.paths, target.as_deref()) {
-            Ok(target_path) => target_path,
-            Err(err) => {
-                let message = format!("远程配置目标无效：{err}");
-                self.log(&message);
-                show_error(&message);
-                return;
-            }
-        };
-        if target_path.exists()
-            && !confirm(
-                "确认覆盖",
-                &format!(
-                    "目标文件 {} 已存在，是否覆盖？",
-                    target_path.to_string_lossy()
-                ),
-            )
-        {
-            return;
-        }
         if let Err(err) = save_subscription_url(&self.paths, url) {
             let message = format!("保存远程配置失败：{err}");
             self.log(&message);
@@ -105,14 +80,33 @@ impl TrayApp {
                 return;
             }
         };
-        let subscription = self
-            .config
-            .subscription
-            .clone()
-            .unwrap_or(SubscriptionConfig {
-                url: Some(url.to_string()),
-                target,
-            });
+        let Some(subscription) = self.config.subscription.clone() else {
+            let message = "重新读取配置失败：缺少 subscription 配置".to_string();
+            self.log(&message);
+            show_error(&message);
+            return;
+        };
+        let target_path =
+            match resolve_subscription_target(&self.paths, subscription.target.as_deref()) {
+                Ok(target_path) => target_path,
+                Err(err) => {
+                    let message = format!("远程配置目标无效：{err}");
+                    self.log(&message);
+                    show_error(&message);
+                    return;
+                }
+            };
+        if target_path.exists()
+            && !confirm(
+                "确认覆盖",
+                &format!(
+                    "目标文件 {} 已存在，是否覆盖？",
+                    target_path.to_string_lossy()
+                ),
+            )
+        {
+            return;
+        }
         match download_subscription(&self.paths, &subscription) {
             Ok(target) => self.log(&format!("远程配置已下载：{}", target.to_string_lossy())),
             Err(err) => {

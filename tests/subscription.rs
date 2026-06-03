@@ -8,13 +8,13 @@ use singboost::{
 };
 
 #[test]
-fn resolves_missing_target_to_config_json() {
+fn rejects_missing_target_instead_of_falling_back() {
     let temp = tempfile::tempdir().unwrap();
     let paths = AppPaths::new(temp.path().to_path_buf());
 
-    let target = resolve_subscription_target(&paths, None).unwrap();
+    let error = resolve_subscription_target(&paths, None).unwrap_err();
 
-    assert_eq!(target, paths.config_json());
+    assert!(matches!(error, SubscriptionError::MissingTarget));
 }
 
 #[test]
@@ -81,7 +81,7 @@ fn rejects_empty_download_response() {
         &paths,
         &SubscriptionConfig {
             url: Some(url),
-            target: None,
+            target: Some("config.json".to_string()),
         },
     )
     .unwrap_err();

@@ -4,6 +4,8 @@ use std::io;
 use std::path::Path;
 use thiserror::Error;
 
+const DEFAULT_SUBSCRIPTION_TARGET: &str = "config.json";
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AppConfig {
     pub run_as_admin: bool,
@@ -123,6 +125,9 @@ pub fn save_subscription_url(paths: &AppPaths, url: &str) -> io::Result<()> {
         )
     })?;
     subscription.insert("url".to_string(), toml::Value::String(url.to_string()));
+    subscription
+        .entry("target".to_string())
+        .or_insert_with(|| toml::Value::String(DEFAULT_SUBSCRIPTION_TARGET.to_string()));
     std::fs::write(
         paths.config_toml(),
         toml::to_string_pretty(&value).map_err(io::Error::other)?,
