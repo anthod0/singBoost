@@ -63,7 +63,7 @@ To enable remote config download, uncomment and fill the `[subscription]` exampl
 
 ## Tray Menu
 
-Left-click the tray icon to open the Web UI.
+Left-click the tray icon to open the Web UI only when the sing-box core is running.
 
 Right-click for common actions:
 

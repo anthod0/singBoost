@@ -99,7 +99,9 @@ impl TrayApp {
             ..
         } = event
         {
-            self.open_web_ui();
+            if self.state == AppState::Running {
+                self.open_web_ui();
+            }
         }
     }
 }

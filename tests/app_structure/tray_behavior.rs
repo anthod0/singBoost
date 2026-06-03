@@ -1,7 +1,7 @@
 use crate::support::read_tray_app_sources;
 
 #[test]
-fn left_click_opens_web_ui_and_right_click_opens_menu() {
+fn left_click_opens_web_ui_only_when_kernel_is_running_and_right_click_opens_menu() {
     let tray_app = read_tray_app_sources();
 
     assert!(
@@ -16,8 +16,9 @@ fn left_click_opens_web_ui_and_right_click_opens_menu() {
         tray_app.contains("TrayIconEvent::Click")
             && tray_app.contains("MouseButton::Left")
             && tray_app.contains("MouseButtonState::Up")
+            && tray_app.contains("if self.state == AppState::Running")
             && tray_app.contains("self.open_web_ui()"),
-        "Left click release on the tray icon should open the Web UI"
+        "Left click release should open the Web UI only while the kernel is running"
     );
 }
 
