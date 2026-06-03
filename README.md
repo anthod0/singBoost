@@ -53,6 +53,25 @@ start_command = 'sing-box.exe -D . -c config.json run'
 
 To enable remote config download, uncomment and fill the `[subscription]` example in `boost.toml`.
 
+### Sing-box Config Merging
+
+sing-box supports loading multiple config files with repeated `-c` options. Config files are merged in order by sing-box, and array fields are appended.
+
+This is useful for adding local settings to a downloaded remote config.
+
+Example:
+
+```toml
+[sing_box]
+start_command = 'sing-box.exe -D . -c config.json -c local.json run'
+
+[subscription]
+url = ""
+target = "config.json"
+```
+
+In this example, `config.json` can be the downloaded remote config, and `local.json` can contain user-maintained local additions.
+
 ## Tray Menu
 
 Left-click the tray icon to open the Web UI only when the sing-box core is running.
