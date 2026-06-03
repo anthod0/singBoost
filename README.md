@@ -55,6 +55,7 @@ start_command = 'sing-box.exe -D . -c config.json run'
 
 ## Tray Menu
 
+Left-click the tray icon to open the Web UI.
 Right-click the tray icon to access:
 
 - `Start / Stop / Restart`: manage sing-box core state.

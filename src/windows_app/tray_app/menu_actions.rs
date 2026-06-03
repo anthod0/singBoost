@@ -20,14 +20,7 @@ impl TrayApp {
                 AppState::Starting => {}
             },
             RESTART_ID => self.restart_kernel(),
-            OPEN_UI_ID => match resolve_web_ui_url(&self.paths) {
-                Ok(url) => {
-                    if let Err(err) = open::that(&url) {
-                        self.error(&format!("打开 UI 失败：{err}"));
-                    }
-                }
-                Err(err) => self.error(&format!("打开 UI 失败：无法解析 UI 地址：{err}")),
-            },
+            OPEN_UI_ID => self.open_web_ui(),
             LOG_ID => self.open_log_window(),
             ADMIN_ID => self.toggle_admin(),
             AUTOSTART_ID => self.toggle_autostart(),
@@ -35,6 +28,17 @@ impl TrayApp {
             _ => {}
         }
         self.update_menu();
+    }
+
+    pub(super) fn open_web_ui(&self) {
+        match resolve_web_ui_url(&self.paths) {
+            Ok(url) => {
+                if let Err(err) = open::that(&url) {
+                    self.error(&format!("打开 UI 失败：{err}"));
+                }
+            }
+            Err(err) => self.error(&format!("打开 UI 失败：无法解析 UI 地址：{err}")),
+        }
     }
 
     fn open_log_window(&mut self) {

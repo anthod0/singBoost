@@ -1,6 +1,36 @@
 use crate::support::read_tray_app_sources;
 
 #[test]
+fn left_click_opens_web_ui_and_right_click_opens_menu() {
+    let tray_app = read_tray_app_sources();
+    let readme = std::fs::read_to_string("README.md").unwrap();
+
+    assert!(
+        tray_app.contains(".with_menu_on_left_click(false)"),
+        "Tray menu should not open on left click"
+    );
+    assert!(
+        tray_app.contains(".with_menu_on_right_click(true)"),
+        "Tray menu should still open on right click"
+    );
+    assert!(
+        tray_app.contains("TrayIconEvent::Click")
+            && tray_app.contains("MouseButton::Left")
+            && tray_app.contains("MouseButtonState::Up")
+            && tray_app.contains("self.open_web_ui()"),
+        "Left click release on the tray icon should open the Web UI"
+    );
+    assert!(
+        readme.contains("Left-click the tray icon to open the Web UI."),
+        "README should document left-click Web UI behavior"
+    );
+    assert!(
+        readme.contains("Right-click the tray icon to access:"),
+        "README should document right-click menu behavior"
+    );
+}
+
+#[test]
 fn open_ui_menu_item_follows_kernel_running_state() {
     let tray_menu = std::fs::read_to_string("src/windows_app/tray_menu.rs").unwrap();
     let tray_app = read_tray_app_sources();
