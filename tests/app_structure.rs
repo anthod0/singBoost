@@ -1,3 +1,17 @@
+fn read_tray_app_sources() -> String {
+    [
+        "src/windows_app/tray_app.rs",
+        "src/windows_app/tray_app/config.rs",
+        "src/windows_app/tray_app/kernel.rs",
+        "src/windows_app/tray_app/menu_actions.rs",
+        "src/windows_app/tray_app/ui_state.rs",
+    ]
+    .into_iter()
+    .map(|path| std::fs::read_to_string(path).unwrap())
+    .collect::<Vec<_>>()
+    .join("\n")
+}
+
 #[test]
 fn windows_binary_uses_gui_subsystem_to_avoid_console_window() {
     let main_rs = std::fs::read_to_string("src/main.rs").unwrap();
@@ -11,7 +25,7 @@ fn windows_binary_uses_gui_subsystem_to_avoid_console_window() {
 #[test]
 fn windows_child_processes_are_hidden_unless_user_opens_log_window() {
     let process_rs = std::fs::read_to_string("src/windows_app/process.rs").unwrap();
-    let tray_app = std::fs::read_to_string("src/windows_app/tray_app.rs").unwrap();
+    let tray_app = read_tray_app_sources();
     let autostart_rs = std::fs::read_to_string("src/windows_app/autostart.rs").unwrap();
 
     assert!(
@@ -31,7 +45,7 @@ fn windows_child_processes_are_hidden_unless_user_opens_log_window() {
 #[test]
 fn open_ui_menu_item_follows_kernel_running_state() {
     let tray_menu = std::fs::read_to_string("src/windows_app/tray_menu.rs").unwrap();
-    let tray_app = std::fs::read_to_string("src/windows_app/tray_app.rs").unwrap();
+    let tray_app = read_tray_app_sources();
 
     assert!(
         tray_menu.contains("open_ui: MenuItem"),
@@ -50,7 +64,7 @@ fn open_ui_menu_item_follows_kernel_running_state() {
 #[test]
 fn kernel_start_errors_use_chinese_user_facing_prefix() {
     let command_rs = std::fs::read_to_string("src/core/command.rs").unwrap();
-    let tray_app = std::fs::read_to_string("src/windows_app/tray_app.rs").unwrap();
+    let tray_app = read_tray_app_sources();
 
     assert!(
         !command_rs.contains("expect(\"validated start command\")"),
@@ -68,7 +82,7 @@ fn kernel_start_errors_use_chinese_user_facing_prefix() {
 
 #[test]
 fn kernel_unexpected_exit_is_detected_and_reported_to_users() {
-    let tray_app = std::fs::read_to_string("src/windows_app/tray_app.rs").unwrap();
+    let tray_app = read_tray_app_sources();
 
     assert!(
         tray_app.contains("poll_kernel_exit"),
@@ -90,7 +104,7 @@ fn kernel_unexpected_exit_is_detected_and_reported_to_users() {
 
 #[test]
 fn admin_toggle_reports_autostart_sync_failures() {
-    let tray_app = std::fs::read_to_string("src/windows_app/tray_app.rs").unwrap();
+    let tray_app = read_tray_app_sources();
 
     assert!(
         tray_app.contains("管理员运行配置已更新，但同步开机自启任务失败"),
@@ -105,7 +119,7 @@ fn admin_toggle_reports_autostart_sync_failures() {
 #[test]
 fn startup_state_prevents_duplicate_start_clicks() {
     let core_mod = std::fs::read_to_string("src/core/mod.rs").unwrap();
-    let tray_app = std::fs::read_to_string("src/windows_app/tray_app.rs").unwrap();
+    let tray_app = read_tray_app_sources();
 
     assert!(
         core_mod.contains("Starting"),
