@@ -7,6 +7,16 @@ use singboost::{
 };
 
 #[test]
+fn windows_binary_uses_gui_subsystem_to_avoid_console_window() {
+    let main_rs = std::fs::read_to_string("src/main.rs").unwrap();
+
+    assert!(
+        main_rs.contains("windows_subsystem = \"windows\""),
+        "Windows builds must use the GUI subsystem so launching SingBoost does not open a console window"
+    );
+}
+
+#[test]
 fn app_paths_are_derived_from_app_dir() {
     let paths = AppPaths::new(PathBuf::from(r"D:\Program Files\sing-box"));
 

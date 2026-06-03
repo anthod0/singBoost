@@ -454,7 +454,7 @@ fn relaunch_elevated(paths: &AppPaths) -> Result<(), Box<dyn Error>> {
     }
 }
 
-fn show_error(message: &str) {
+pub(crate) fn show_error(message: &str) {
     let title = HSTRING::from("SingBoost");
     let text = HSTRING::from(message);
     unsafe {
