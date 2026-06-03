@@ -15,6 +15,7 @@ pub use web_ui::{WebUiError, resolve_web_ui_url};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AppState {
     Stopped,
+    Starting,
     Running,
     Error,
 }

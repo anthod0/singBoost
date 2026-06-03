@@ -82,6 +82,7 @@ impl TrayApp {
             START_STOP_ID => match self.state {
                 AppState::Running => self.stop_kernel(),
                 AppState::Stopped | AppState::Error => self.start_kernel(),
+                AppState::Starting => {}
             },
             RESTART_ID => self.restart_kernel(),
             OPEN_UI_ID => match resolve_web_ui_url(&self.paths) {
@@ -102,9 +103,12 @@ impl TrayApp {
     }
 
     fn start_kernel(&mut self) {
-        if matches!(self.state, AppState::Running) {
+        if matches!(self.state, AppState::Running | AppState::Starting) {
             return;
         }
+        self.state = AppState::Starting;
+        self.update_menu();
+
         if let Err(err) = validate_preflight_files(&self.paths) {
             self.error(&format!("preflight failed: {err}"));
             return;
@@ -141,6 +145,7 @@ impl TrayApp {
                 self.log("sing-box started");
                 self.kernel = Some(child);
                 self.state = AppState::Running;
+                self.update_menu();
             }
             Err(err) => self.error(&format!("failed to start sing-box: {err}")),
         }
@@ -253,11 +258,19 @@ impl TrayApp {
         match self.state {
             AppState::Running => {
                 self.menu.start_stop.set_text("停止");
+                self.menu.start_stop.set_enabled(true);
                 self.menu.restart.set_enabled(true);
                 self.menu.open_ui.set_enabled(true);
             }
+            AppState::Starting => {
+                self.menu.start_stop.set_text("启动中...");
+                self.menu.start_stop.set_enabled(false);
+                self.menu.restart.set_enabled(false);
+                self.menu.open_ui.set_enabled(false);
+            }
             AppState::Stopped | AppState::Error => {
                 self.menu.start_stop.set_text("启动");
+                self.menu.start_stop.set_enabled(true);
                 self.menu.restart.set_enabled(false);
                 self.menu.open_ui.set_enabled(false);
             }
@@ -274,6 +287,7 @@ impl TrayApp {
 
     fn error(&mut self, message: &str) {
         self.state = AppState::Error;
+        self.update_menu();
         self.log(message);
         show_error(message);
     }

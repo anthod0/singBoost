@@ -48,6 +48,32 @@ fn open_ui_menu_item_follows_kernel_running_state() {
 }
 
 #[test]
+fn startup_state_prevents_duplicate_start_clicks() {
+    let core_mod = std::fs::read_to_string("src/core/mod.rs").unwrap();
+    let tray_app = std::fs::read_to_string("src/windows_app/tray_app.rs").unwrap();
+
+    assert!(
+        core_mod.contains("Starting"),
+        "AppState should include a Starting state for in-progress startup"
+    );
+    assert!(
+        tray_app.contains("self.state = AppState::Starting"),
+        "Starting state should be set before preflight/check/spawn work begins"
+    );
+    assert!(
+        tray_app.contains("AppState::Starting =>")
+            && tray_app.contains("self.menu.start_stop.set_text(\"启动中...\")")
+            && tray_app.contains("self.menu.start_stop.set_enabled(false)"),
+        "Tray menu should show and disable the start item while startup is in progress"
+    );
+    assert!(
+        tray_app.contains("self.state = AppState::Running;\n                self.update_menu();")
+            && tray_app.contains("self.state = AppState::Error;\n        self.update_menu();"),
+        "Tray menu should be refreshed when startup finishes successfully or fails"
+    );
+}
+
+#[test]
 fn source_is_split_by_responsibility() {
     for path in [
         "src/core/paths.rs",

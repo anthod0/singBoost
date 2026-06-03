@@ -61,7 +61,7 @@ start_command = 'sing-box.exe -D . -c config.json run'
 
 右键托盘图标可使用：
 
-- `启动` / `停止`：启动或停止 sing-box。
+- `启动` / `启动中...` / `停止`：启动、显示启动中状态或停止 sing-box；启动中会禁用该菜单项，避免重复启动。
 - `重启`：仅在 sing-box 运行中可用。
 - `打开 UI`：打开配置文件中的Web UI。
 - `日志`：打开 PowerShell 窗口实时跟踪 `logs\singboost-runtime.log`。
