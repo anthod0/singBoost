@@ -19,7 +19,6 @@ SingBoost 是一个纯粹的 windows sing-box 内核启动器，提供托盘图�
 
 - 自行获取完整的 sing-box 配置。
 - sing-box.exe
-- wintun.dll（如果使用 tun 模式）。
 
 ## 目标目录结构
 
@@ -29,7 +28,6 @@ SingBoost 是一个纯粹的 windows sing-box 内核启动器，提供托盘图�
 <app_dir>\
   singboost.exe
   sing-box.exe
-  wintun.dll
   config.json
 ```
 
