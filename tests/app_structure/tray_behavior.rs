@@ -117,6 +117,23 @@ fn kernel_start_errors_use_chinese_user_facing_prefix() {
 }
 
 #[test]
+fn missing_kernel_and_config_use_informational_guidance() {
+    let tray_app = read_tray_app_sources();
+
+    assert!(
+        tray_app.contains("PreflightError::MissingSingBox")
+            && tray_app.contains("PreflightError::MissingConfig"),
+        "Missing sing-box.exe and config.json should be handled as distinct startup cases"
+    );
+    assert!(
+        tray_app.contains("show_info")
+            && tray_app.contains("\"未找到 sing-box 内核\"")
+            && tray_app.contains("\"未找到 sing-box 配置文件, {}\""),
+        "Missing startup files should show concise informational guidance instead of a generic error popup"
+    );
+}
+
+#[test]
 fn kernel_unexpected_exit_is_detected_and_reported_to_users() {
     let tray_app = read_tray_app_sources();
 

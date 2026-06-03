@@ -1,7 +1,10 @@
 use super::TrayApp;
 use crate::windows_app::elevation::is_elevated;
+use crate::windows_app::error_dialog::show_info;
 use crate::windows_app::process::{hide_window, pipe_reader, terminate_child};
-use singboost::{AppState, KernelCommand, sing_box_tun_enabled, validate_preflight_files};
+use singboost::{
+    AppState, KernelCommand, PreflightError, sing_box_tun_enabled, validate_preflight_files,
+};
 use std::process::{Child, Command, ExitStatus, Stdio};
 use std::sync::Arc;
 
@@ -14,7 +17,18 @@ impl TrayApp {
         self.update_menu();
 
         if let Err(err) = validate_preflight_files(&self.paths) {
-            self.kernel_start_error(&format!("启动前检查失败：{err}"));
+            match err {
+                PreflightError::MissingSingBox(_) => {
+                    self.kernel_start_info("未找到 sing-box 内核");
+                }
+                PreflightError::MissingConfig(path) => {
+                    self.kernel_start_info(&format!(
+                        "未找到 sing-box 配置文件, {}",
+                        path.to_string_lossy()
+                    ));
+                }
+                err => self.kernel_start_error(&format!("启动前检查失败：{err}")),
+            }
             return;
         }
         let command = match KernelCommand::run(&self.paths, &self.config) {
@@ -125,6 +139,13 @@ impl TrayApp {
 
     fn kernel_start_error(&mut self, message: &str) {
         self.error(&format!("内核启动失败：{message}"));
+    }
+
+    fn kernel_start_info(&mut self, message: &str) {
+        self.state = AppState::Error;
+        self.update_menu();
+        self.log(message);
+        show_info("SingBoost", message);
     }
 }
 
