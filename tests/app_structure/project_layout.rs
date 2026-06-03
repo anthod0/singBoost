@@ -26,3 +26,15 @@ fn tray_icon_asset_is_a_32px_rgba_image() {
     assert_eq!(icon.len(), 32 * 32 * 4);
     assert!(icon.chunks_exact(4).any(|pixel| pixel[3] > 0));
 }
+
+#[test]
+fn windows_exe_icon_resource_is_configured() {
+    let cargo_toml = std::fs::read_to_string("Cargo.toml").unwrap();
+    let build_rs = std::fs::read_to_string("build.rs").unwrap();
+    let icon = std::fs::read("assets/app.ico").unwrap();
+
+    assert!(cargo_toml.contains("[build-dependencies]") && cargo_toml.contains("winresource"));
+    assert!(build_rs.contains("WindowsResource") && build_rs.contains("assets/app.ico"));
+    assert_eq!(&icon[0..4], &[0, 0, 1, 0]);
+    assert!(icon.len() > 22);
+}
