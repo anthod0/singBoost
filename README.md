@@ -55,7 +55,7 @@ To enable remote config download, uncomment and fill the `[subscription]` exampl
 
 ### Sing-box Config Merging
 
-sing-box supports loading multiple config files with repeated `-c` options. Config files are merged in order by sing-box, and array fields are appended.
+sing-box supports loading multiple config files with repeated `-c` options. sing-box sorts config paths before merging: earlier files have priority for scalar fields, while array fields are appended.
 
 This is useful for adding local settings to a downloaded remote config.
 
@@ -63,14 +63,14 @@ Example:
 
 ```toml
 [sing_box]
-start_command = 'sing-box.exe -D . -c config.json -c local.json run'
+start_command = 'sing-box.exe -D . -c 00-local.json -c config.json run'
 
 [subscription]
 url = ""
 target = "config.json"
 ```
 
-In this example, `config.json` can be the downloaded remote config, and `local.json` can contain user-maintained local additions.
+In this example, `00-local.json` is loaded before `config.json`, so local scalar fields such as `log.level` take priority over the downloaded remote config. Array fields are appended.
 
 ## Tray Menu
 
