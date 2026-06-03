@@ -1,14 +1,14 @@
 use crate::windows_app::autostart::{autostart_enabled, remove_autostart, set_autostart};
 use crate::windows_app::elevation::{is_elevated, relaunch_elevated};
 use crate::windows_app::error_dialog::show_error;
-use crate::windows_app::process::{pipe_reader, terminate_child};
+use crate::windows_app::process::{hide_window, pipe_reader, terminate_child};
 use crate::windows_app::tray_menu::{
     ADMIN_ID, AUTOSTART_ID, EXIT_ID, LOG_ID, OPEN_UI_ID, RESTART_ID, START_STOP_ID, TrayMenu,
     create_icon, create_menu,
 };
 use singboost::{
     AppConfig, AppPaths, AppState, KernelCommand, RuntimeLog, resolve_web_ui_url,
-    validate_preflight_files,
+    sing_box_tun_enabled, validate_preflight_files,
 };
 use std::error::Error;
 use std::process::{Child, Command, Stdio};
@@ -113,16 +113,29 @@ impl TrayApp {
             self.error(&format!("sing-box check failed: {err}"));
             return;
         }
+        match sing_box_tun_enabled(&self.paths) {
+            Ok(true) if !is_elevated() => {
+                self.error("sing-box config enables TUN mode, which requires administrator privileges. Please enable '以管理员身份运行' or start SingBoost as administrator.");
+                return;
+            }
+            Ok(_) => {}
+            Err(err) => {
+                self.error(&format!("failed to check TUN mode: {err}"));
+                return;
+            }
+        }
 
         let command = KernelCommand::run(&self.paths, &self.config);
-        match Command::new(&command.program)
-            .args(&command.args)
-            .current_dir(self.paths.app_dir())
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-        {
+        let mut child_command = Command::new(&command.program);
+        hide_window(
+            child_command
+                .args(&command.args)
+                .current_dir(self.paths.app_dir())
+                .stdin(Stdio::null())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped()),
+        );
+        match child_command.spawn() {
             Ok(mut child) => {
                 self.pipe_child_logs(&mut child);
                 self.log("sing-box started");
@@ -135,11 +148,13 @@ impl TrayApp {
 
     fn run_check(&mut self) -> Result<(), String> {
         let command = KernelCommand::check(&self.paths);
-        let output = Command::new(&command.program)
-            .args(&command.args)
-            .current_dir(self.paths.app_dir())
-            .output()
-            .map_err(|err| err.to_string())?;
+        let mut check_command = Command::new(&command.program);
+        hide_window(
+            check_command
+                .args(&command.args)
+                .current_dir(self.paths.app_dir()),
+        );
+        let output = check_command.output().map_err(|err| err.to_string())?;
         self.log(&String::from_utf8_lossy(&output.stdout));
         self.log(&String::from_utf8_lossy(&output.stderr));
         if output.status.success() {

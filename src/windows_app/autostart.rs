@@ -1,3 +1,4 @@
+use crate::windows_app::process::hide_window;
 use singboost::AppPaths;
 use std::error::Error;
 use std::process::{Command, Stdio};
@@ -5,13 +6,16 @@ use std::process::{Command, Stdio};
 const TASK_NAME: &str = "SingBoost";
 
 pub(crate) fn autostart_enabled() -> bool {
-    Command::new("schtasks")
-        .args(["/Query", "/TN", TASK_NAME])
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .map(|status| status.success())
-        .unwrap_or(false)
+    let mut command = Command::new("schtasks");
+    hide_window(
+        command
+            .args(["/Query", "/TN", TASK_NAME])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null()),
+    )
+    .status()
+    .map(|status| status.success())
+    .unwrap_or(false)
 }
 
 pub(crate) fn set_autostart(paths: &AppPaths, highest: bool) -> Result<(), Box<dyn Error>> {
@@ -29,7 +33,8 @@ pub(crate) fn set_autostart(paths: &AppPaths, highest: bool) -> Result<(), Box<d
     if highest {
         args.extend(["/RL".to_string(), "HIGHEST".to_string()]);
     }
-    let status = Command::new("schtasks").args(args).status()?;
+    let mut command = Command::new("schtasks");
+    let status = hide_window(command.args(args)).status()?;
     if status.success() {
         Ok(())
     } else {
@@ -38,9 +43,8 @@ pub(crate) fn set_autostart(paths: &AppPaths, highest: bool) -> Result<(), Box<d
 }
 
 pub(crate) fn remove_autostart() -> Result<(), Box<dyn Error>> {
-    let status = Command::new("schtasks")
-        .args(["/Delete", "/F", "/TN", TASK_NAME])
-        .status()?;
+    let mut command = Command::new("schtasks");
+    let status = hide_window(command.args(["/Delete", "/F", "/TN", TASK_NAME])).status()?;
     if status.success() {
         Ok(())
     } else {

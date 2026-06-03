@@ -9,6 +9,26 @@ fn windows_binary_uses_gui_subsystem_to_avoid_console_window() {
 }
 
 #[test]
+fn windows_child_processes_are_hidden_unless_user_opens_log_window() {
+    let process_rs = std::fs::read_to_string("src/windows_app/process.rs").unwrap();
+    let tray_app = std::fs::read_to_string("src/windows_app/tray_app.rs").unwrap();
+    let autostart_rs = std::fs::read_to_string("src/windows_app/autostart.rs").unwrap();
+
+    assert!(
+        process_rs.contains("CREATE_NO_WINDOW") && process_rs.contains("hide_window"),
+        "Windows console child processes must be spawned with CREATE_NO_WINDOW"
+    );
+    assert!(
+        tray_app.matches("hide_window(").count() >= 2,
+        "sing-box check and run commands should not flash console windows"
+    );
+    assert!(
+        autostart_rs.contains("hide_window("),
+        "schtasks queries/updates should not flash console windows"
+    );
+}
+
+#[test]
 fn open_ui_menu_item_follows_kernel_running_state() {
     let tray_menu = std::fs::read_to_string("src/windows_app/tray_menu.rs").unwrap();
     let tray_app = std::fs::read_to_string("src/windows_app/tray_app.rs").unwrap();
