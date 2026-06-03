@@ -1,25 +1,25 @@
 # SingBoost
 
-SingBoost is a minimal Windows launcher for the sing-box core. It provides a system tray icon, log viewing, Web UI opening, startup on login, and optional administrator privileges.
+A minimal Windows launcher for the sing-box core.
 
 ## Features
 
 - Start/stop the sing-box core
 - View runtime logs
-- Windows system tray icon
-- Open the sing-box Web UI
+- Quick open the sing-box Web UI
 - Configure startup on login
-- Optionally run SingBoost, and therefore the sing-box child process, as administrator
+- Windows system tray icon
 
 ## Non-goals
 
-- Does not generate or modify sing-box configuration
-- Does not parse proxy nodes
+- Does not generate or modify sing-box config files
+- Does not provide common GUI interfaces for subscriptions, config, proxy switching, etc.
 - Does not bundle the sing-box core
+- Does not support non-Windows platforms
 
 ## Prerequisites
 
-- A complete sing-box configuration prepared by the user
+- A complete sing-box config file
 - `sing-box.exe`
 
 ## Target Directory Layout
@@ -27,7 +27,7 @@ SingBoost is a minimal Windows launcher for the sing-box core. It provides a sys
 Place `singboost.exe` in the same directory as `sing-box.exe`:
 
 ```text
-<app_dir>\
+<your_app_dir>\
   singboost.exe
   sing-box.exe
   config.json
@@ -40,7 +40,7 @@ On first launch, if `boost.toml` does not exist, SingBoost creates a default con
 Configuration file path:
 
 ```text
-<app_dir>\boost.toml
+<your_app_dir>\boost.toml
 ```
 
 Default content:
@@ -53,37 +53,28 @@ run_as_admin = false
 start_command = 'sing-box.exe -D . -c config.json run'
 ```
 
-Notes:
-
-- When `run_as_admin = true`, SingBoost relaunches itself through UAC after startup.
-- The sing-box child process inherits the current SingBoost process privileges.
-- `start_command` can be customized by the user.
-- If the configuration file already exists but its TOML cannot be parsed, required fields are missing, or `start_command` is empty, SingBoost will not start sing-box.
-
 ## Tray Menu
 
 Right-click the tray icon to access:
 
-- Start / Starting... / Stop: start sing-box, show the starting state, or stop sing-box. The menu item is disabled while starting to avoid duplicate launches.
-- Restart: available only while sing-box is running.
-- Open UI: open the Web UI from `config.json` at `experimental.clash_api.external_controller`.
+- `Start / Stop / Restart`: manage sing-box core state.
+- Open UI: open the Web UI from `config.json`.
 - Logs: open a PowerShell window that tails `logs\singboost-runtime.log` in real time.
 - Run as administrator: toggle the administrator privilege setting.
-- Startup on login: create or remove the Windows Task Scheduler startup task.
-- Exit: stop sing-box, close log windows opened by SingBoost, and exit.
+- Startup on login: toggle the windows startup task.
+- Exit: stop sing-box core, close log windows opened by SingBoost, and exit.
 
 ## Logs
 
 SingBoost recreates this file each time it starts:
 
 ```text
-<app_dir>\logs\singboost-runtime.log
+<your_app_dir>\logs\singboost-runtime.log
 ```
 
 Log sources include:
 
-- sing-box stdout
-- sing-box stderr
+- sing-box stdout and stderr
 - SingBoost events and errors
 
 Click Logs in the tray menu to view live log output.
@@ -92,14 +83,6 @@ Click Logs in the tray menu to view live log output.
 
 ### Native Windows Build
 
-Development build:
-
-```powershell
-cargo build
-```
-
-Release build:
-
 ```powershell
 cargo build --release
 ```
@@ -107,13 +90,10 @@ cargo build --release
 Build artifacts:
 
 ```text
-target\debug\singboost.exe
 target\release\singboost.exe
 ```
 
-For normal use, prefer `target\release\singboost.exe`.
-
-### Linux/macOS Build Notes
+### Linux Build Notes
 
 The tray application is supported only on Windows. Building directly on non-Windows platforms only produces a placeholder program, not a usable Windows tray launcher.
 
@@ -129,5 +109,3 @@ Artifact path:
 ```text
 target/x86_64-pc-windows-gnu/release/singboost.exe
 ```
-
-Building and verifying tray behavior, Task Scheduler integration, and administrator privilege behavior on Windows is recommended.
