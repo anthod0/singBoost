@@ -8,12 +8,12 @@ A minimal Windows launcher for the sing-box core.
 - View runtime logs
 - Quick open the sing-box Web UI
 - Configure startup on login
-- Download a complete remote sing-box JSON config on demand, formatting it before saving
+- Download a complete remote sing-box JSON config on demand
 - Windows system tray icon
 
 ## Non-goals
 
-- Does not generate or convert sing-box config files; it only validates/formats explicit remote JSON downloads before saving
+- Does not generate or convert sing-box config files
 - Does not provide common GUI interfaces for node subscriptions, config generation, proxy switching, etc.
 - Does not bundle the sing-box core
 - Does not support non-Windows platforms
@@ -50,14 +50,6 @@ Default content:
 [sing_box]
 start_command = 'sing-box.exe -D . -c config.json run'
 ```
-
-Application-managed state file path:
-
-```text
-<your_app_dir>\boost.state.toml
-```
-
-`boost.state.toml` stores tray-managed preferences such as `run_as_admin` and may be rewritten by SingBoost.
 
 To enable remote config download, uncomment and fill the `[subscription]` example in `boost.toml`.
 
