@@ -18,6 +18,8 @@ pub enum SubscriptionError {
     InvalidTarget(String),
     #[error("remote config response is empty")]
     EmptyResponse,
+    #[error("remote config is not valid JSON: {0}")]
+    InvalidJson(#[from] serde_json::Error),
     #[error("download failed: {0}")]
     Download(String),
     #[error("failed to write remote config: {0}")]
@@ -101,6 +103,8 @@ pub fn write_subscription_content(target: &Path, content: &[u8]) -> Result<(), S
     if content.iter().all(|byte| byte.is_ascii_whitespace()) {
         return Err(SubscriptionError::EmptyResponse);
     }
+    let config: serde_json::Value = serde_json::from_slice(content)?;
+    let pretty_config = serde_json::to_string_pretty(&config)?;
     if let Some(parent) = target.parent() {
         std::fs::create_dir_all(parent)?;
     }
@@ -111,7 +115,7 @@ pub fn write_subscription_content(target: &Path, content: &[u8]) -> Result<(), S
             .and_then(|extension| extension.to_str())
             .unwrap_or("download")
     ));
-    std::fs::write(&tmp, content)?;
+    std::fs::write(&tmp, pretty_config)?;
     if target.exists() {
         std::fs::remove_file(target)?;
     }

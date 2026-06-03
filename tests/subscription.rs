@@ -42,19 +42,25 @@ fn writes_subscription_content_atomically_and_rejects_empty_content() {
     let paths = AppPaths::new(temp.path().to_path_buf());
     std::fs::write(paths.config_json(), "old").unwrap();
 
-    write_subscription_content(&paths.config_json(), b"new").unwrap();
-    assert_eq!(std::fs::read_to_string(paths.config_json()).unwrap(), "new");
+    write_subscription_content(&paths.config_json(), br#"{"log":{"level":"info"}}"#).unwrap();
+    assert_eq!(
+        std::fs::read_to_string(paths.config_json()).unwrap(),
+        "{\n  \"log\": {\n    \"level\": \"info\"\n  }\n}"
+    );
 
     let err = write_subscription_content(&paths.config_json(), b"  \n\t").unwrap_err();
     assert!(matches!(err, SubscriptionError::EmptyResponse));
-    assert_eq!(std::fs::read_to_string(paths.config_json()).unwrap(), "new");
+    assert_eq!(
+        std::fs::read_to_string(paths.config_json()).unwrap(),
+        "{\n  \"log\": {\n    \"level\": \"info\"\n  }\n}"
+    );
 }
 
 #[test]
-fn downloads_subscription_to_configured_target() {
+fn downloads_subscription_to_configured_target_as_pretty_json() {
     let temp = tempfile::tempdir().unwrap();
     let paths = AppPaths::new(temp.path().to_path_buf());
-    let url = spawn_http_server("remote config");
+    let url = spawn_http_server(r#"{"outbounds":[{"type":"direct"}]}"#);
 
     download_subscription(
         &paths,
@@ -67,8 +73,20 @@ fn downloads_subscription_to_configured_target() {
 
     assert_eq!(
         std::fs::read_to_string(temp.path().join("downloaded.json")).unwrap(),
-        "remote config"
+        "{\n  \"outbounds\": [\n    {\n      \"type\": \"direct\"\n    }\n  ]\n}"
     );
+}
+
+#[test]
+fn rejects_invalid_json_download_without_overwriting_existing_config() {
+    let temp = tempfile::tempdir().unwrap();
+    let paths = AppPaths::new(temp.path().to_path_buf());
+    std::fs::write(paths.config_json(), "old").unwrap();
+
+    let err = write_subscription_content(&paths.config_json(), b"not json").unwrap_err();
+
+    assert!(matches!(err, SubscriptionError::InvalidJson(_)));
+    assert_eq!(std::fs::read_to_string(paths.config_json()).unwrap(), "old");
 }
 
 #[test]
