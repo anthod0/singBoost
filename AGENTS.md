@@ -10,7 +10,7 @@ SingBoost is a minimal Windows tray launcher for the sing-box core, implemented 
 
 - Do not generate, modify, or rewrite the user's `config.json`.
 - Keep README, AGENTS.md, and the code implementation consistent.
-- Be conservative with user configuration: critical application configuration is read from `singboost.toml`; do not fallback for missing/invalid configuration. Only check whether the config file is missing during application startup, and create a default config file if it is missing.
+- Be conservative with user configuration: critical application configuration is read from `boost.toml`; do not fallback for missing/invalid configuration. Only check whether the config file is missing during application startup, and create a default config file if it is missing.
 
 ## Windows Behavior Notes
 

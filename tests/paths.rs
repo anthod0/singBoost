@@ -21,7 +21,7 @@ fn app_paths_are_derived_from_app_dir() {
     );
     assert_eq!(
         paths.config_toml(),
-        PathBuf::from(r"D:\Program Files\sing-box\singboost.toml")
+        PathBuf::from(r"D:\Program Files\sing-box\boost.toml")
     );
     assert_eq!(
         paths.runtime_log(),

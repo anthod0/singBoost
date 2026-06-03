@@ -26,7 +26,7 @@ impl AppPaths {
     }
 
     pub fn config_toml(&self) -> PathBuf {
-        self.child("singboost.toml")
+        self.child("boost.toml")
     }
 
     pub fn sing_box_exe(&self) -> PathBuf {

@@ -33,14 +33,14 @@ SingBoost 是一个纯粹的 windows sing-box 内核启动器，提供托盘图�
   config.json
 ```
 
-首次运行时，如果 `singboost.toml` 不存在，SingBoost 会自动创建默认配置。
+首次运行时，如果 `boost.toml` 不存在，SingBoost 会自动创建默认配置。
 
 ## 配置文件
 
 配置文件路径：
 
 ```text
-<app_dir>\singboost.toml
+<app_dir>\boost.toml
 ```
 
 默认内容：
