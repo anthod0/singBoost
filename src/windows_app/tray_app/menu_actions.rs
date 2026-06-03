@@ -3,8 +3,9 @@ use super::config::write_config;
 use crate::windows_app::autostart::{autostart_enabled, remove_autostart, set_autostart};
 use crate::windows_app::elevation::{is_elevated, relaunch_elevated};
 use crate::windows_app::process::terminate_child;
+use crate::windows_app::show_info;
 use crate::windows_app::tray_menu::{
-    ADMIN_ID, AUTOSTART_ID, EXIT_ID, LOG_ID, OPEN_UI_ID, RESTART_ID, START_STOP_ID,
+    ABOUT_ID, ADMIN_ID, AUTOSTART_ID, EXIT_ID, LOG_ID, OPEN_UI_ID, RESTART_ID, START_STOP_ID,
 };
 use singboost::{AppState, resolve_web_ui_url};
 use std::error::Error;
@@ -24,6 +25,7 @@ impl TrayApp {
             LOG_ID => self.open_log_window(),
             ADMIN_ID => self.toggle_admin(),
             AUTOSTART_ID => self.toggle_autostart(),
+            ABOUT_ID => self.show_about(),
             EXIT_ID => self.exit(),
             _ => {}
         }
@@ -39,6 +41,16 @@ impl TrayApp {
             }
             Err(err) => self.error(&format!("打开 UI 失败：无法解析 UI 地址：{err}")),
         }
+    }
+
+    fn show_about(&self) {
+        show_info(
+            "About SingBoost",
+            &format!(
+                "SingBoost {}\n\nA minimal Windows tray launcher for sing-box.\n\nLicense: MIT",
+                env!("CARGO_PKG_VERSION")
+            ),
+        );
     }
 
     fn open_log_window(&mut self) {

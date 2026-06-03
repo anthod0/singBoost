@@ -8,7 +8,7 @@ mod single_instance;
 mod tray_app;
 mod tray_menu;
 
-pub(crate) use error_dialog::show_error;
+pub(crate) use error_dialog::{show_error, show_info};
 
 use singboost::{AppPaths, ensure_config_file, load_config};
 use std::error::Error;

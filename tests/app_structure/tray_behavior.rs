@@ -31,6 +31,35 @@ fn left_click_opens_web_ui_and_right_click_opens_menu() {
 }
 
 #[test]
+fn about_menu_shows_app_version_and_license() {
+    let tray_menu = std::fs::read_to_string("src/windows_app/tray_menu.rs").unwrap();
+    let tray_app = read_tray_app_sources();
+    let readme = std::fs::read_to_string("README.md").unwrap();
+
+    assert!(
+        tray_menu.contains("ABOUT_ID") && tray_menu.contains("\"关于\""),
+        "Tray menu should include an About item named 关于"
+    );
+    assert!(
+        tray_app.contains("ABOUT_ID => self.show_about()"),
+        "About menu item should open the About dialog"
+    );
+    assert!(
+        tray_app.contains("env!(\"CARGO_PKG_VERSION\")"),
+        "About dialog should use the Cargo package version"
+    );
+    assert!(
+        tray_app.contains("A minimal Windows tray launcher for sing-box.")
+            && tray_app.contains("License: MIT"),
+        "About dialog should show the approved description and license text"
+    );
+    assert!(
+        readme.contains("About SingBoost: show SingBoost version and license information."),
+        "README should document the About menu item"
+    );
+}
+
+#[test]
 fn open_ui_menu_item_follows_kernel_running_state() {
     let tray_menu = std::fs::read_to_string("src/windows_app/tray_menu.rs").unwrap();
     let tray_app = read_tray_app_sources();

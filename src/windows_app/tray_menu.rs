@@ -8,6 +8,7 @@ pub(crate) const OPEN_UI_ID: &str = "open_ui";
 pub(crate) const LOG_ID: &str = "log";
 pub(crate) const ADMIN_ID: &str = "admin";
 pub(crate) const AUTOSTART_ID: &str = "autostart";
+pub(crate) const ABOUT_ID: &str = "about";
 pub(crate) const EXIT_ID: &str = "exit";
 
 pub(crate) struct TrayMenu {
@@ -26,6 +27,7 @@ pub(crate) fn create_menu(run_as_admin: bool, autostart: bool) -> (Menu, TrayMen
     let log = MenuItem::with_id(LOG_ID, "日志", true, None);
     let admin = CheckMenuItem::with_id(ADMIN_ID, "以管理员身份运行", true, run_as_admin, None);
     let autostart = CheckMenuItem::with_id(AUTOSTART_ID, "开机自启", true, autostart, None);
+    let about = MenuItem::with_id(ABOUT_ID, "关于", true, None);
     let exit = MenuItem::with_id(EXIT_ID, "退出", true, None);
     let separator = PredefinedMenuItem::separator();
     let _ = menu.append_items(&[
@@ -37,6 +39,7 @@ pub(crate) fn create_menu(run_as_admin: bool, autostart: bool) -> (Menu, TrayMen
         &admin,
         &autostart,
         &separator,
+        &about,
         &exit,
     ]);
     (
