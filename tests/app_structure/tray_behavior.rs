@@ -80,6 +80,16 @@ fn about_menu_shows_app_version_and_license() {
 }
 
 #[test]
+fn log_window_reads_runtime_log_as_utf8() {
+    let tray_app = read_tray_app_sources();
+
+    assert!(
+        tray_app.contains("-Encoding UTF8"),
+        "PowerShell log window must decode the UTF-8 runtime log explicitly so Chinese text is not interpreted with the device ANSI code page"
+    );
+}
+
+#[test]
 fn open_ui_menu_item_follows_kernel_running_state() {
     let tray_menu = std::fs::read_to_string("src/windows_app/tray_menu.rs").unwrap();
     let tray_app = read_tray_app_sources();
