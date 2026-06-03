@@ -5,7 +5,6 @@ mod elevation;
 mod error_dialog;
 mod process;
 mod single_instance;
-mod subscription_dialog;
 mod tray_app;
 mod tray_menu;
 

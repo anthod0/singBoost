@@ -5,14 +5,12 @@ use crate::windows_app::elevation::{is_elevated, relaunch_elevated};
 use crate::windows_app::error_dialog::{confirm, show_error};
 use crate::windows_app::process::terminate_child;
 use crate::windows_app::show_info;
-use crate::windows_app::subscription_dialog::show_subscription_dialog;
 use crate::windows_app::tray_menu::{
-    ABOUT_ID, ADMIN_ID, AUTOSTART_ID, EXIT_ID, LOG_ID, OPEN_UI_ID, REMOTE_CONFIG_ID, RESTART_ID,
-    START_STOP_ID,
+    ABOUT_ID, ADMIN_ID, AUTOSTART_ID, DOWNLOAD_REMOTE_CONFIG_ID, EXIT_ID, LOG_ID, OPEN_APP_DIR_ID,
+    OPEN_CONFIG_ID, OPEN_SING_BOX_CONFIG_ID, OPEN_UI_ID, RESTART_ID, START_STOP_ID,
 };
 use singboost::{
     AppState, download_subscription, load_config, resolve_subscription_target, resolve_web_ui_url,
-    save_subscription_url,
 };
 use std::error::Error;
 use std::process::Command;
@@ -29,7 +27,10 @@ impl TrayApp {
             RESTART_ID => self.restart_kernel(),
             OPEN_UI_ID => self.open_web_ui(),
             LOG_ID => self.open_log_window(),
-            REMOTE_CONFIG_ID => self.configure_remote_config(),
+            OPEN_CONFIG_ID => self.open_config_file(),
+            OPEN_APP_DIR_ID => self.open_app_dir(),
+            OPEN_SING_BOX_CONFIG_ID => self.open_sing_box_config_file(),
+            DOWNLOAD_REMOTE_CONFIG_ID => self.download_remote_config(),
             ADMIN_ID => self.toggle_admin(),
             AUTOSTART_ID => self.toggle_autostart(),
             ABOUT_ID => self.show_about(),
@@ -50,27 +51,37 @@ impl TrayApp {
         }
     }
 
-    fn configure_remote_config(&mut self) {
-        let initial_url = self
+    fn open_config_file(&mut self) {
+        self.open_path(self.paths.config_toml(), "打开配置文件失败");
+    }
+
+    fn open_app_dir(&mut self) {
+        self.open_path(self.paths.app_dir(), "打开程序目录失败");
+    }
+
+    fn open_sing_box_config_file(&mut self) {
+        let path = self
             .config
             .subscription
             .as_ref()
-            .and_then(|subscription| subscription.url.as_deref())
-            .unwrap_or("");
-        let Some(url) = show_subscription_dialog(initial_url) else {
-            return;
-        };
-        let url = url.trim();
-        if url.is_empty() {
-            show_error("订阅地址不能为空。");
-            return;
+            .and_then(|subscription| subscription.target.as_deref())
+            .map(|target| resolve_subscription_target(&self.paths, Some(target)))
+            .transpose()
+            .map(|target| target.unwrap_or_else(|| self.paths.config_json()));
+
+        match path {
+            Ok(path) => self.open_path(path, "打开 sing-box 配置文件失败"),
+            Err(err) => self.error(&format!("打开 sing-box 配置文件失败：{err}")),
         }
-        if let Err(err) = save_subscription_url(&self.paths, url) {
-            let message = format!("保存远程配置失败：{err}");
-            self.log(&message);
-            show_error(&message);
-            return;
+    }
+
+    fn open_path(&mut self, path: std::path::PathBuf, context: &str) {
+        if let Err(err) = open::that(&path) {
+            self.error(&format!("{context}：{err}"));
         }
+    }
+
+    fn download_remote_config(&mut self) {
         self.config = match load_config(&self.paths) {
             Ok(config) => config,
             Err(err) => {
@@ -81,7 +92,8 @@ impl TrayApp {
             }
         };
         let Some(subscription) = self.config.subscription.clone() else {
-            let message = "重新读取配置失败：缺少 subscription 配置".to_string();
+            let message =
+                "下载远程配置失败：缺少 subscription 配置，请先编辑 boost.toml".to_string();
             self.log(&message);
             show_error(&message);
             return;

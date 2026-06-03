@@ -31,6 +31,44 @@ fn left_click_opens_web_ui_and_right_click_opens_menu() {
 }
 
 #[test]
+fn config_submenu_groups_configuration_shortcuts_without_subscription_dialog() {
+    let tray_menu = std::fs::read_to_string("src/windows_app/tray_menu.rs").unwrap();
+    let tray_app = read_tray_app_sources();
+    let readme = std::fs::read_to_string("README.md").unwrap();
+
+    assert!(
+        tray_menu.contains("CONFIG_MENU_ID") && tray_menu.contains("\"配置\""),
+        "Tray menu should include a 配置 submenu"
+    );
+    assert!(
+        tray_menu.contains("OPEN_CONFIG_ID")
+            && tray_menu.contains("\"打开配置文件\"")
+            && tray_menu.contains("OPEN_APP_DIR_ID")
+            && tray_menu.contains("\"打开程序目录\"")
+            && tray_menu.contains("OPEN_SING_BOX_CONFIG_ID")
+            && tray_menu.contains("\"打开 sing-box 配置文件\"")
+            && tray_menu.contains("DOWNLOAD_REMOTE_CONFIG_ID")
+            && tray_menu.contains("\"下载远程配置\""),
+        "Configuration submenu should expose the approved shortcut items"
+    );
+    assert!(
+        tray_app.contains("OPEN_CONFIG_ID => self.open_config_file()")
+            && tray_app.contains("OPEN_APP_DIR_ID => self.open_app_dir()")
+            && tray_app.contains("OPEN_SING_BOX_CONFIG_ID => self.open_sing_box_config_file()")
+            && tray_app.contains("DOWNLOAD_REMOTE_CONFIG_ID => self.download_remote_config()"),
+        "Configuration submenu actions should be routed to dedicated handlers"
+    );
+    assert!(
+        !tray_app.contains("show_subscription_dialog"),
+        "Remote config download should read boost.toml instead of opening a URL input dialog"
+    );
+    assert!(
+        readme.contains("Configuration: open config files/directories and download the configured remote complete config."),
+        "README should document the configuration submenu"
+    );
+}
+
+#[test]
 fn about_menu_shows_app_version_and_license() {
     let tray_menu = std::fs::read_to_string("src/windows_app/tray_menu.rs").unwrap();
     let tray_app = read_tray_app_sources();

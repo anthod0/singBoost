@@ -54,7 +54,7 @@ run_as_admin = false
 start_command = 'sing-box.exe -D . -c config.json run'
 ```
 
-Optional remote config download settings are only added after using the remote config dialog, or by editing `boost.toml` manually:
+Optional remote config download settings can be added by editing `boost.toml` manually:
 
 ```toml
 [subscription]
@@ -70,7 +70,11 @@ Right-click the tray icon to access:
 - `Start / Stop / Restart`: manage sing-box core state.
 - Open UI: open the Web UI from `config.json`.
 - Logs: open a PowerShell window that tails `logs\singboost-runtime.log` in real time.
-- Remote config: enter a remote complete sing-box config URL, then save and download it to `subscription.target`.
+- Configuration: open config files/directories and download the configured remote complete config.
+  - Open config file: open `boost.toml`.
+  - Open app directory: open the SingBoost directory.
+  - Open sing-box config file: open `subscription.target`, or `config.json` when no target is configured.
+  - Download remote config: read `[subscription]` from `boost.toml` and download it to `subscription.target`.
 - Run as administrator: toggle the administrator privilege setting.
 - Startup on login: toggle the windows startup task.
 - About SingBoost: show SingBoost version and license information.
