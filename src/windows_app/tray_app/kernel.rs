@@ -3,7 +3,8 @@ use crate::windows_app::elevation::is_elevated;
 use crate::windows_app::error_dialog::show_info;
 use crate::windows_app::process::{hide_window, pipe_reader, terminate_child};
 use singboost::{
-    AppState, KernelCommand, PreflightError, sing_box_tun_enabled, validate_preflight_files,
+    AppState, KernelCommand, PreflightError, load_config, sing_box_tun_enabled,
+    validate_preflight_files,
 };
 use std::process::{Child, Command, ExitStatus, Stdio};
 use std::sync::Arc;
@@ -31,7 +32,15 @@ impl TrayApp {
             }
             return;
         }
-        let command = match KernelCommand::run(&self.paths, &self.config) {
+        let config = match load_config(&self.paths) {
+            Ok(config) => config,
+            Err(err) => {
+                self.kernel_start_error(&format!("读取 boost.toml 失败：{err}"));
+                return;
+            }
+        };
+        self.log(&format!("start_command: {}", config.start_command));
+        let command = match KernelCommand::run(&self.paths, &config) {
             Ok(command) => command,
             Err(err) => {
                 self.kernel_start_error(&format!(
@@ -40,6 +49,7 @@ impl TrayApp {
                 return;
             }
         };
+        self.config = config;
         if let Err(err) = self.run_check() {
             self.kernel_start_error(&format!("sing-box check 失败：{err}"));
             return;

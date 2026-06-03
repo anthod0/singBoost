@@ -118,6 +118,20 @@ fn kernel_start_errors_use_chinese_user_facing_prefix() {
 }
 
 #[test]
+fn kernel_start_reloads_and_logs_start_command() {
+    let kernel_rs = std::fs::read_to_string("src/windows_app/tray_app/kernel.rs").unwrap();
+
+    assert!(
+        kernel_rs.contains("load_config(&self.paths)"),
+        "Each kernel start should reload boost.toml so restart picks up sing_box.start_command changes"
+    );
+    assert!(
+        kernel_rs.contains("start_command:"),
+        "Kernel startup should log the effective sing_box.start_command"
+    );
+}
+
+#[test]
 fn missing_kernel_and_config_use_informational_guidance() {
     let tray_app = read_tray_app_sources();
 
