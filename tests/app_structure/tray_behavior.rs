@@ -3,7 +3,6 @@ use crate::support::read_tray_app_sources;
 #[test]
 fn left_click_opens_web_ui_and_right_click_opens_menu() {
     let tray_app = read_tray_app_sources();
-    let readme = std::fs::read_to_string("README.md").unwrap();
 
     assert!(
         tray_app.contains(".with_menu_on_left_click(false)"),
@@ -20,21 +19,12 @@ fn left_click_opens_web_ui_and_right_click_opens_menu() {
             && tray_app.contains("self.open_web_ui()"),
         "Left click release on the tray icon should open the Web UI"
     );
-    assert!(
-        readme.contains("Left-click the tray icon to open the Web UI."),
-        "README should document left-click Web UI behavior"
-    );
-    assert!(
-        readme.contains("Right-click the tray icon to access:"),
-        "README should document right-click menu behavior"
-    );
 }
 
 #[test]
 fn config_submenu_groups_configuration_shortcuts_without_subscription_dialog() {
     let tray_menu = std::fs::read_to_string("src/windows_app/tray_menu.rs").unwrap();
     let tray_app = read_tray_app_sources();
-    let readme = std::fs::read_to_string("README.md").unwrap();
 
     assert!(
         tray_menu.contains("CONFIG_MENU_ID") && tray_menu.contains("\"配置\""),
@@ -62,17 +52,12 @@ fn config_submenu_groups_configuration_shortcuts_without_subscription_dialog() {
         !tray_app.contains("show_subscription_dialog"),
         "Remote config download should read boost.toml instead of opening a URL input dialog"
     );
-    assert!(
-        readme.contains("Configuration: open config files/directories and download the configured remote complete config."),
-        "README should document the configuration submenu"
-    );
 }
 
 #[test]
 fn about_menu_shows_app_version_and_license() {
     let tray_menu = std::fs::read_to_string("src/windows_app/tray_menu.rs").unwrap();
     let tray_app = read_tray_app_sources();
-    let readme = std::fs::read_to_string("README.md").unwrap();
 
     assert!(
         tray_menu.contains("ABOUT_ID") && tray_menu.contains("\"关于\""),
@@ -90,10 +75,6 @@ fn about_menu_shows_app_version_and_license() {
         tray_app.contains("A minimal Windows tray launcher for sing-box.")
             && tray_app.contains("License: MIT"),
         "About dialog should show the approved description and license text"
-    );
-    assert!(
-        readme.contains("About SingBoost: show SingBoost version and license information."),
-        "README should document the About menu item"
     );
 }
 

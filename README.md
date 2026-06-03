@@ -59,20 +59,16 @@ To enable remote config download, uncomment and fill the `[subscription]` exampl
 ## Tray Menu
 
 Left-click the tray icon to open the Web UI.
-Right-click the tray icon to access:
 
-- `Start / Stop / Restart`: manage sing-box core state.
-- Open UI: open the Web UI from `config.json`.
-- Logs: open a PowerShell window that tails `logs\singboost-runtime.log` in real time.
-- Configuration: open config files/directories and download the configured remote complete config.
-  - Open config file: open `boost.toml`.
-  - Open app directory: open the SingBoost directory.
-  - Open sing-box config file: open `subscription.target`, or `config.json` when no target is configured.
-  - Download remote config: read `[subscription]` from `boost.toml` and download it to `subscription.target`.
-- Run as administrator: toggle the administrator privilege setting.
-- Startup on login: toggle the windows startup task.
-- About SingBoost: show SingBoost version and license information.
-- Exit: stop sing-box core, close log windows opened by SingBoost, and exit.
+Right-click for common actions:
+
+- Manage sing-box: start, stop, or restart the core.
+- Open UI and logs.
+- Configuration shortcuts.
+- Toggle administrator mode.
+- Toggle startup on login.
+- Show About information.
+- Exit SingBoost and stop sing-box.
 
 ## Logs
 
