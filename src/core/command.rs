@@ -3,7 +3,7 @@ use crate::core::paths::{AppPaths, append_child, looks_like_windows_path};
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum CommandLineError {
     #[error("command line is empty")]
     Empty,
@@ -31,9 +31,8 @@ impl KernelCommand {
         }
     }
 
-    pub fn run(paths: &AppPaths, config: &AppConfig) -> Self {
+    pub fn run(paths: &AppPaths, config: &AppConfig) -> Result<Self, CommandLineError> {
         spawn_command_line(&config.start_command, &paths.app_dir())
-            .expect("validated start command")
     }
 }
 

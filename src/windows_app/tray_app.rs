@@ -11,8 +11,9 @@ use singboost::{
     sing_box_tun_enabled, validate_preflight_files,
 };
 use std::error::Error;
-use std::process::{Child, Command, Stdio};
+use std::process::{Child, Command, ExitStatus, Stdio};
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 use tao::event::{Event, StartCause};
 use tao::event_loop::{ControlFlow, EventLoopBuilder};
 use tray_icon::menu::{MenuEvent, MenuId};
@@ -68,10 +69,11 @@ impl TrayApp {
         }));
 
         event_loop.run(move |event, _, control_flow| {
-            *control_flow = ControlFlow::Wait;
+            *control_flow = ControlFlow::WaitUntil(Instant::now() + Duration::from_millis(500));
             match event {
                 Event::NewEvents(StartCause::Init) => {}
                 Event::UserEvent(UserEvent::Menu(event)) => self.handle_menu(event.id().clone()),
+                Event::MainEventsCleared => self.poll_kernel_exit(),
                 _ => {}
             }
         });
@@ -88,10 +90,10 @@ impl TrayApp {
             OPEN_UI_ID => match resolve_web_ui_url(&self.paths) {
                 Ok(url) => {
                     if let Err(err) = open::that(&url) {
-                        self.error(&format!("failed to open UI {url}: {err}"));
+                        self.error(&format!("打开 UI 失败：{err}"));
                     }
                 }
-                Err(err) => self.error(&format!("failed to resolve UI URL: {err}")),
+                Err(err) => self.error(&format!("打开 UI 失败：无法解析 UI 地址：{err}")),
             },
             LOG_ID => self.open_log_window(),
             ADMIN_ID => self.toggle_admin(),
@@ -110,26 +112,34 @@ impl TrayApp {
         self.update_menu();
 
         if let Err(err) = validate_preflight_files(&self.paths) {
-            self.error(&format!("preflight failed: {err}"));
+            self.kernel_start_error(&format!("启动前检查失败：{err}"));
             return;
         }
+        let command = match KernelCommand::run(&self.paths, &self.config) {
+            Ok(command) => command,
+            Err(err) => {
+                self.kernel_start_error(&format!(
+                    "启动命令无效：{err}。请检查 boost.toml 中的 sing_box.start_command。"
+                ));
+                return;
+            }
+        };
         if let Err(err) = self.run_check() {
-            self.error(&format!("sing-box check failed: {err}"));
+            self.kernel_start_error(&format!("sing-box check 失败：{err}"));
             return;
         }
         match sing_box_tun_enabled(&self.paths) {
             Ok(true) if !is_elevated() => {
-                self.error("sing-box config enables TUN mode, which requires administrator privileges. Please enable '以管理员身份运行' or start SingBoost as administrator.");
+                self.kernel_start_error("sing-box 配置启用了 TUN 模式，需要管理员权限。请启用“以管理员身份运行”，或以管理员身份启动 SingBoost。");
                 return;
             }
             Ok(_) => {}
             Err(err) => {
-                self.error(&format!("failed to check TUN mode: {err}"));
+                self.kernel_start_error(&format!("检查 TUN 模式失败：{err}"));
                 return;
             }
         }
 
-        let command = KernelCommand::run(&self.paths, &self.config);
         let mut child_command = Command::new(&command.program);
         hide_window(
             child_command
@@ -147,7 +157,7 @@ impl TrayApp {
                 self.state = AppState::Running;
                 self.update_menu();
             }
-            Err(err) => self.error(&format!("failed to start sing-box: {err}")),
+            Err(err) => self.kernel_start_error(&format!("启动 sing-box 进程失败：{err}")),
         }
     }
 
@@ -196,7 +206,7 @@ impl TrayApp {
             .spawn()
         {
             Ok(child) => self.log_windows.push(child),
-            Err(err) => self.error(&format!("failed to open log window: {err}")),
+            Err(err) => self.error(&format!("打开日志窗口失败：{err}")),
         }
     }
 
@@ -204,25 +214,29 @@ impl TrayApp {
         let enabled = !self.config.run_as_admin;
         self.config.run_as_admin = enabled;
         if let Err(err) = write_config(&self.paths, &self.config) {
-            self.error(&format!("failed to write config: {err}"));
+            self.error(&format!("写入配置失败：{err}"));
             return;
+        }
+        if autostart_enabled() {
+            if let Err(err) = set_autostart(&self.paths, self.config.run_as_admin) {
+                self.error(&format!(
+                    "管理员运行配置已更新，但同步开机自启任务失败：{err}。请重新切换“开机自启”，或检查 Windows 任务计划。"
+                ));
+            }
         }
         if enabled && !is_elevated() {
             let paths = self.paths.clone();
             self.exit_after(|| relaunch_elevated(&paths));
-        }
-        if autostart_enabled() {
-            let _ = set_autostart(&self.paths, self.config.run_as_admin);
         }
     }
 
     fn toggle_autostart(&mut self) {
         if autostart_enabled() {
             if let Err(err) = remove_autostart() {
-                self.error(&format!("failed to remove autostart: {err}"));
+                self.error(&format!("关闭开机自启失败：{err}"));
             }
         } else if let Err(err) = set_autostart(&self.paths, self.config.run_as_admin) {
-            self.error(&format!("failed to enable autostart: {err}"));
+            self.error(&format!("启用开机自启失败：{err}"));
         }
     }
 
@@ -240,7 +254,7 @@ impl TrayApp {
     {
         let result = f();
         if let Err(err) = result {
-            self.error(&format!("failed before exit: {err}"));
+            self.error(&format!("退出前操作失败：{err}"));
         }
         self.exit()
     }
@@ -285,11 +299,42 @@ impl TrayApp {
         }
     }
 
+    fn poll_kernel_exit(&mut self) {
+        let Some(child) = self.kernel.as_mut() else {
+            return;
+        };
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                self.kernel = None;
+                self.error(&format!(
+                    "sing-box 已异常退出，退出状态：{}。请查看日志获取详细信息。",
+                    format_exit_status(status)
+                ));
+            }
+            Ok(None) => {}
+            Err(err) => {
+                self.kernel = None;
+                self.error(&format!("检查 sing-box 运行状态失败：{err}"));
+            }
+        }
+    }
+
+    fn kernel_start_error(&mut self, message: &str) {
+        self.error(&format!("内核启动失败：{message}"));
+    }
+
     fn error(&mut self, message: &str) {
         self.state = AppState::Error;
         self.update_menu();
         self.log(message);
         show_error(message);
+    }
+}
+
+fn format_exit_status(status: ExitStatus) -> String {
+    match status.code() {
+        Some(code) => format!("退出码 {code}"),
+        None => status.to_string(),
     }
 }
 

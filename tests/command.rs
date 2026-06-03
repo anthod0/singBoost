@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use singboost::{AppConfig, AppPaths, KernelCommand, spawn_command_line};
+use singboost::{AppConfig, AppPaths, CommandLineError, KernelCommand, spawn_command_line};
 
 #[test]
 fn sing_box_check_command_matches_spec() {
@@ -27,7 +27,7 @@ fn sing_box_check_command_matches_spec() {
 fn sing_box_run_command_matches_spec() {
     let paths = AppPaths::new(PathBuf::from(r"D:\Program Files\sing-box"));
     let config = AppConfig::default_for_app_dir(&paths.app_dir());
-    let command = KernelCommand::run(&paths, &config);
+    let command = KernelCommand::run(&paths, &config).unwrap();
 
     assert_eq!(
         command.program,
@@ -43,6 +43,19 @@ fn sing_box_run_command_matches_spec() {
             "run".to_string(),
         ]
     );
+}
+
+#[test]
+fn invalid_sing_box_start_command_returns_error() {
+    let paths = AppPaths::new(PathBuf::from(r"D:\Program Files\sing-box"));
+    let config = AppConfig {
+        run_as_admin: false,
+        start_command: r#""sing-box.exe -D . -c config.json run"#.to_string(),
+    };
+
+    let error = KernelCommand::run(&paths, &config).unwrap_err();
+
+    assert_eq!(error, CommandLineError::UnterminatedQuote);
 }
 
 #[test]
