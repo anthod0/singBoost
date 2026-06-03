@@ -325,19 +325,9 @@ fn create_menu(run_as_admin: bool, autostart: bool) -> (Menu, TrayMenu) {
 }
 
 fn create_icon() -> Result<Icon, Box<dyn Error>> {
-    let mut rgba = Vec::with_capacity(32 * 32 * 4);
-    for y in 0..32 {
-        for x in 0..32 {
-            let edge = x < 3 || y < 3 || x > 28 || y > 28;
-            let (r, g, b, a) = if edge {
-                (30, 144, 255, 255)
-            } else {
-                (20, 20, 20, 255)
-            };
-            rgba.extend([r, g, b, a]);
-        }
-    }
-    Ok(Icon::from_rgba(rgba, 32, 32)?)
+    const TRAY_ICON: &[u8] = include_bytes!("../assets/tray-icon.rgba");
+
+    Ok(Icon::from_rgba(TRAY_ICON.to_vec(), 32, 32)?)
 }
 
 fn pipe_reader<R>(reader: R, log: Arc<Mutex<RuntimeLog>>, label: &'static str)

@@ -17,6 +17,14 @@ fn windows_binary_uses_gui_subsystem_to_avoid_console_window() {
 }
 
 #[test]
+fn tray_icon_asset_is_a_32px_rgba_image() {
+    let icon = std::fs::read("assets/tray-icon.rgba").unwrap();
+
+    assert_eq!(icon.len(), 32 * 32 * 4);
+    assert!(icon.chunks_exact(4).any(|pixel| pixel[3] > 0));
+}
+
+#[test]
 fn app_paths_are_derived_from_app_dir() {
     let paths = AppPaths::new(PathBuf::from(r"D:\Program Files\sing-box"));
 
