@@ -4,6 +4,7 @@ mod autostart;
 mod elevation;
 mod error_dialog;
 mod process;
+mod single_instance;
 mod tray_app;
 mod tray_menu;
 
@@ -23,6 +24,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
+    let _single_instance = single_instance::acquire()?;
     let app = TrayApp::new(paths, config)?;
     app.run();
 }

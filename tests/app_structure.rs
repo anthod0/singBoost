@@ -62,9 +62,42 @@ fn source_is_split_by_responsibility() {
         "src/windows_app/autostart.rs",
         "src/windows_app/elevation.rs",
         "src/windows_app/error_dialog.rs",
+        "src/windows_app/single_instance.rs",
     ] {
         assert!(std::path::Path::new(path).exists(), "missing {path}");
     }
+}
+
+#[test]
+fn windows_app_rejects_duplicate_instances_after_elevation_handoff() {
+    let windows_mod = std::fs::read_to_string("src/windows_app/mod.rs").unwrap();
+    let single_instance =
+        std::fs::read_to_string("src/windows_app/single_instance.rs").unwrap_or_default();
+
+    let elevation_check = "if config.run_as_admin && !elevation::is_elevated()";
+    let single_instance_check = "single_instance::acquire()";
+    assert!(
+        windows_mod.contains("mod single_instance;"),
+        "Windows app must include a single-instance guard module"
+    );
+    assert!(
+        windows_mod.contains(single_instance_check),
+        "Windows startup must acquire a single-instance guard"
+    );
+    assert!(
+        windows_mod.find(elevation_check).unwrap()
+            < windows_mod.find(single_instance_check).unwrap(),
+        "Single-instance guard must be acquired after UAC relaunch handoff so the unelevated launcher does not block the elevated real instance"
+    );
+    assert!(
+        single_instance.contains("CreateMutexW")
+            && single_instance.contains("ERROR_ALREADY_EXISTS"),
+        "Single-instance guard should use a Windows named mutex and treat an existing mutex as a duplicate instance"
+    );
+    assert!(
+        single_instance.contains("ERROR_ACCESS_DENIED"),
+        "Single-instance guard should treat access denied as an existing elevated instance"
+    );
 }
 
 #[test]
