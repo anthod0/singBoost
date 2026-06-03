@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-    tags:
-      - 'v*'
   pull_request:
 
 permissions:
@@ -69,15 +67,26 @@ jobs:
       - name: Build release
         run: cargo build --release
 
+      - name: Read package version
+        id: package_version
+        if: github.event_name == 'push' && github.ref_name == 'main'
+        shell: pwsh
+        run: |
+          $metadata = cargo metadata --no-deps --format-version 1 | ConvertFrom-Json
+          $version = $metadata.packages[0].version
+          "version=$version" >> $env:GITHUB_OUTPUT
+
       - name: Package release asset
-        if: github.ref_type == 'tag'
+        if: github.event_name == 'push' && github.ref_name == 'main'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist | Out-Null
           Compress-Archive -Path target\release\singboost.exe -DestinationPath dist\singboost-windows-x86_64.zip -Force
 
       - name: Publish GitHub Release
-        if: github.ref_type == 'tag'
+        if: github.event_name == 'push' && github.ref_name == 'main'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.package_version.outputs.version }}
+          name: v${{ steps.package_version.outputs.version }}
           files: dist/singboost-windows-x86_64.zip

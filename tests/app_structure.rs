@@ -1,5 +1,3 @@
-#[path = "app_structure/ci_workflow.rs"]
-mod ci_workflow;
 #[path = "app_structure/project_layout.rs"]
 mod project_layout;
 #[path = "app_structure/support.rs"]
