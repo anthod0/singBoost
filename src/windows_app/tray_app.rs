@@ -1,47 +1,24 @@
-#![cfg(windows)]
-
+use crate::windows_app::autostart::{autostart_enabled, remove_autostart, set_autostart};
+use crate::windows_app::elevation::{is_elevated, relaunch_elevated};
+use crate::windows_app::error_dialog::show_error;
+use crate::windows_app::process::{pipe_reader, terminate_child};
+use crate::windows_app::tray_menu::{
+    ADMIN_ID, AUTOSTART_ID, EXIT_ID, LOG_ID, OPEN_UI_ID, RESTART_ID, START_STOP_ID, TrayMenu,
+    create_icon, create_menu,
+};
 use singboost::{
-    AppConfig, AppPaths, AppState, KernelCommand, RuntimeLog, ensure_config_file, load_config,
-    resolve_web_ui_url, validate_preflight_files,
+    AppConfig, AppPaths, AppState, KernelCommand, RuntimeLog, resolve_web_ui_url,
+    validate_preflight_files,
 };
 use std::error::Error;
-use std::io::{BufRead, BufReader};
 use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
-use std::thread;
-use std::time::{Duration, Instant};
 use tao::event::{Event, StartCause};
 use tao::event_loop::{ControlFlow, EventLoopBuilder};
-use tray_icon::menu::{CheckMenuItem, Menu, MenuEvent, MenuId, MenuItem, PredefinedMenuItem};
-use tray_icon::{Icon, TrayIcon, TrayIconBuilder};
-use windows::Win32::UI::Shell::{IsUserAnAdmin, ShellExecuteW};
-use windows::Win32::UI::WindowsAndMessaging::{MB_ICONERROR, MB_OK, MessageBoxW, SW_SHOWNORMAL};
-use windows::core::{HSTRING, PCWSTR};
+use tray_icon::menu::{MenuEvent, MenuId};
+use tray_icon::{TrayIcon, TrayIconBuilder};
 
-const START_STOP_ID: &str = "start_stop";
-const RESTART_ID: &str = "restart";
-const OPEN_UI_ID: &str = "open_ui";
-const LOG_ID: &str = "log";
-const ADMIN_ID: &str = "admin";
-const AUTOSTART_ID: &str = "autostart";
-const EXIT_ID: &str = "exit";
-const TASK_NAME: &str = "SingBoost";
-
-pub fn run() -> Result<(), Box<dyn Error>> {
-    let paths = AppPaths::from_current_exe()?;
-    ensure_config_file(&paths)?;
-    let config = load_config(&paths)?;
-
-    if config.run_as_admin && !is_elevated() {
-        relaunch_elevated(&paths)?;
-        return Ok(());
-    }
-
-    let app = TrayApp::new(paths, config)?;
-    app.run();
-}
-
-struct TrayApp {
+pub(crate) struct TrayApp {
     paths: AppPaths,
     config: AppConfig,
     state: AppState,
@@ -52,16 +29,8 @@ struct TrayApp {
     _tray: Option<TrayIcon>,
 }
 
-struct TrayMenu {
-    start_stop: MenuItem,
-    restart: MenuItem,
-    open_ui: MenuItem,
-    admin: CheckMenuItem,
-    autostart: CheckMenuItem,
-}
-
 impl TrayApp {
-    fn new(paths: AppPaths, config: AppConfig) -> Result<Self, Box<dyn Error>> {
+    pub(crate) fn new(paths: AppPaths, config: AppConfig) -> Result<Self, Box<dyn Error>> {
         let mut runtime_log = RuntimeLog::recreate(&paths)?;
         runtime_log.append_event("SingBoost started")?;
         let runtime_log = Arc::new(Mutex::new(runtime_log));
@@ -88,7 +57,7 @@ impl TrayApp {
         Ok(app)
     }
 
-    fn run(mut self) -> ! {
+    pub(crate) fn run(mut self) -> ! {
         enum UserEvent {
             Menu(MenuEvent),
         }
@@ -295,71 +264,6 @@ impl TrayApp {
     }
 }
 
-fn create_menu(run_as_admin: bool, autostart: bool) -> (Menu, TrayMenu) {
-    let menu = Menu::new();
-    let start_stop = MenuItem::with_id(START_STOP_ID, "启动", true, None);
-    let restart = MenuItem::with_id(RESTART_ID, "重启", false, None);
-    let open_ui = MenuItem::with_id(OPEN_UI_ID, "打开 UI", true, None);
-    let log = MenuItem::with_id(LOG_ID, "日志", true, None);
-    let admin = CheckMenuItem::with_id(ADMIN_ID, "以管理员身份运行", true, run_as_admin, None);
-    let autostart = CheckMenuItem::with_id(AUTOSTART_ID, "开机自启", true, autostart, None);
-    let exit = MenuItem::with_id(EXIT_ID, "退出", true, None);
-    let separator = PredefinedMenuItem::separator();
-    let _ = menu.append_items(&[
-        &start_stop,
-        &restart,
-        &open_ui,
-        &log,
-        &separator,
-        &admin,
-        &autostart,
-        &separator,
-        &exit,
-    ]);
-    (
-        menu,
-        TrayMenu {
-            start_stop,
-            restart,
-            open_ui,
-            admin,
-            autostart,
-        },
-    )
-}
-
-fn create_icon() -> Result<Icon, Box<dyn Error>> {
-    const TRAY_ICON: &[u8] = include_bytes!("../assets/tray-icon.rgba");
-
-    Ok(Icon::from_rgba(TRAY_ICON.to_vec(), 32, 32)?)
-}
-
-fn pipe_reader<R>(reader: R, log: Arc<Mutex<RuntimeLog>>, label: &'static str)
-where
-    R: std::io::Read + Send + 'static,
-{
-    thread::spawn(move || {
-        for line in BufReader::new(reader).lines().map_while(Result::ok) {
-            if let Ok(mut log) = log.lock() {
-                let _ = log.append_event(format!("{label}: {line}"));
-            }
-        }
-    });
-}
-
-fn terminate_child(child: &mut Child) {
-    let _ = child.kill();
-    let deadline = Instant::now() + Duration::from_secs(3);
-    while Instant::now() < deadline {
-        if matches!(child.try_wait(), Ok(Some(_))) {
-            return;
-        }
-        thread::sleep(Duration::from_millis(50));
-    }
-    let _ = child.kill();
-    let _ = child.wait();
-}
-
 fn write_config(paths: &AppPaths, config: &AppConfig) -> std::io::Result<()> {
     let escaped = config
         .start_command
@@ -372,91 +276,4 @@ fn write_config(paths: &AppPaths, config: &AppConfig) -> std::io::Result<()> {
             config.run_as_admin, escaped
         ),
     )
-}
-
-fn autostart_enabled() -> bool {
-    Command::new("schtasks")
-        .args(["/Query", "/TN", TASK_NAME])
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .map(|status| status.success())
-        .unwrap_or(false)
-}
-
-fn set_autostart(paths: &AppPaths, highest: bool) -> Result<(), Box<dyn Error>> {
-    let exe = paths.app_dir().join("singboost.exe");
-    let mut args = vec![
-        "/Create".to_string(),
-        "/F".to_string(),
-        "/TN".to_string(),
-        TASK_NAME.to_string(),
-        "/SC".to_string(),
-        "ONLOGON".to_string(),
-        "/TR".to_string(),
-        format!("\"{}\"", exe.display()),
-    ];
-    if highest {
-        args.extend(["/RL".to_string(), "HIGHEST".to_string()]);
-    }
-    let status = Command::new("schtasks").args(args).status()?;
-    if status.success() {
-        Ok(())
-    } else {
-        Err(format!("schtasks exited with {status}").into())
-    }
-}
-
-fn remove_autostart() -> Result<(), Box<dyn Error>> {
-    let status = Command::new("schtasks")
-        .args(["/Delete", "/F", "/TN", TASK_NAME])
-        .status()?;
-    if status.success() {
-        Ok(())
-    } else {
-        Err(format!("schtasks exited with {status}").into())
-    }
-}
-
-fn is_elevated() -> bool {
-    unsafe { IsUserAnAdmin().as_bool() }
-}
-
-fn relaunch_elevated(paths: &AppPaths) -> Result<(), Box<dyn Error>> {
-    let exe = HSTRING::from(
-        paths
-            .app_dir()
-            .join("singboost.exe")
-            .to_string_lossy()
-            .as_ref(),
-    );
-    let verb = HSTRING::from("runas");
-    let result = unsafe {
-        ShellExecuteW(
-            None,
-            PCWSTR(verb.as_ptr()),
-            PCWSTR(exe.as_ptr()),
-            PCWSTR::null(),
-            PCWSTR::null(),
-            SW_SHOWNORMAL,
-        )
-    };
-    if result.0 as isize <= 32 {
-        Err("ShellExecuteW runas failed".into())
-    } else {
-        Ok(())
-    }
-}
-
-pub(crate) fn show_error(message: &str) {
-    let title = HSTRING::from("SingBoost");
-    let text = HSTRING::from(message);
-    unsafe {
-        let _ = MessageBoxW(
-            None,
-            PCWSTR(text.as_ptr()),
-            PCWSTR(title.as_ptr()),
-            MB_OK | MB_ICONERROR,
-        );
-    }
 }

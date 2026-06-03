@@ -18,20 +18,41 @@ fn windows_binary_uses_gui_subsystem_to_avoid_console_window() {
 
 #[test]
 fn open_ui_menu_item_follows_kernel_running_state() {
-    let windows_app = std::fs::read_to_string("src/windows_app.rs").unwrap();
+    let tray_menu = std::fs::read_to_string("src/windows_app/tray_menu.rs").unwrap();
+    let tray_app = std::fs::read_to_string("src/windows_app/tray_app.rs").unwrap();
 
     assert!(
-        windows_app.contains("open_ui: MenuItem"),
+        tray_menu.contains("open_ui: MenuItem"),
         "TrayMenu must keep an Open UI handle so its enabled state can follow the kernel state"
     );
     assert!(
-        windows_app.contains("self.menu.open_ui.set_enabled(true)"),
+        tray_app.contains("self.menu.open_ui.set_enabled(true)"),
         "Open UI should be enabled while the kernel is running"
     );
     assert!(
-        windows_app.contains("self.menu.open_ui.set_enabled(false)"),
+        tray_app.contains("self.menu.open_ui.set_enabled(false)"),
         "Open UI should be disabled while the kernel is stopped or in error"
     );
+}
+
+#[test]
+fn source_is_split_by_responsibility() {
+    for path in [
+        "src/core/paths.rs",
+        "src/core/config.rs",
+        "src/core/command.rs",
+        "src/core/preflight.rs",
+        "src/core/runtime_log.rs",
+        "src/core/web_ui.rs",
+        "src/windows_app/tray_app.rs",
+        "src/windows_app/tray_menu.rs",
+        "src/windows_app/process.rs",
+        "src/windows_app/autostart.rs",
+        "src/windows_app/elevation.rs",
+        "src/windows_app/error_dialog.rs",
+    ] {
+        assert!(std::path::Path::new(path).exists(), "missing {path}");
+    }
 }
 
 #[test]
