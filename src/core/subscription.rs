@@ -77,9 +77,9 @@ fn download_body(url: &str) -> Result<Vec<u8>, SubscriptionError> {
         .args([
             "-NoProfile",
             "-Command",
-            "$bytes=(New-Object System.Net.WebClient).DownloadData($args[0]); [Console]::OpenStandardOutput().Write($bytes,0,$bytes.Length)",
-            url,
+            "$url=$env:SINGBOOST_SUBSCRIPTION_URL; $bytes=(New-Object System.Net.WebClient).DownloadData($url); [Console]::OpenStandardOutput().Write($bytes,0,$bytes.Length)",
         ])
+        .env("SINGBOOST_SUBSCRIPTION_URL", url)
         .output()
         .map_err(|err| SubscriptionError::Download(err.to_string()))?;
     if output.status.success() {
