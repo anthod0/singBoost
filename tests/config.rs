@@ -103,7 +103,7 @@ fn creates_default_state_config_when_missing() {
 
     assert_eq!(
         std::fs::read_to_string(paths.state_toml()).unwrap(),
-        "run_as_admin = false\n"
+        "# Managed by SingBoost. Do not edit manually.\nrun_as_admin = false\n"
     );
 }
 
@@ -126,6 +126,10 @@ fn loads_and_saves_state_config() {
     )
     .unwrap();
 
+    assert_eq!(
+        std::fs::read_to_string(paths.state_toml()).unwrap(),
+        "# Managed by SingBoost. Do not edit manually.\nrun_as_admin = false\n"
+    );
     assert_eq!(
         load_state_config(&paths).unwrap(),
         AppStateConfig {

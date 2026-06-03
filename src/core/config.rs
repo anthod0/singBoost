@@ -21,6 +21,8 @@ pub struct SubscriptionConfig {
     pub target: Option<String>,
 }
 
+const STATE_FILE_HEADER: &str = "# Managed by SingBoost. Do not edit manually.\n";
+
 impl AppConfig {
     pub fn default_for_app_dir(_app_dir: &Path) -> Self {
         Self {
@@ -90,7 +92,10 @@ pub fn ensure_config_file(paths: &AppPaths) -> io::Result<()> {
 pub fn ensure_state_file(paths: &AppPaths) -> io::Result<()> {
     let state_path = paths.state_toml();
     if !state_path.exists() {
-        std::fs::write(state_path, "run_as_admin = false\n")?;
+        std::fs::write(
+            state_path,
+            format!("{STATE_FILE_HEADER}run_as_admin = false\n"),
+        )?;
     }
     Ok(())
 }
@@ -125,6 +130,9 @@ pub fn load_state_config(paths: &AppPaths) -> Result<AppStateConfig, ConfigError
 pub fn save_state_config(paths: &AppPaths, config: &AppStateConfig) -> io::Result<()> {
     std::fs::write(
         paths.state_toml(),
-        format!("run_as_admin = {}\n", config.run_as_admin),
+        format!(
+            "{STATE_FILE_HEADER}run_as_admin = {}\n",
+            config.run_as_admin
+        ),
     )
 }
