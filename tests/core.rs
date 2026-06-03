@@ -17,6 +17,24 @@ fn windows_binary_uses_gui_subsystem_to_avoid_console_window() {
 }
 
 #[test]
+fn open_ui_menu_item_follows_kernel_running_state() {
+    let windows_app = std::fs::read_to_string("src/windows_app.rs").unwrap();
+
+    assert!(
+        windows_app.contains("open_ui: MenuItem"),
+        "TrayMenu must keep an Open UI handle so its enabled state can follow the kernel state"
+    );
+    assert!(
+        windows_app.contains("self.menu.open_ui.set_enabled(true)"),
+        "Open UI should be enabled while the kernel is running"
+    );
+    assert!(
+        windows_app.contains("self.menu.open_ui.set_enabled(false)"),
+        "Open UI should be disabled while the kernel is stopped or in error"
+    );
+}
+
+#[test]
 fn tray_icon_asset_is_a_32px_rgba_image() {
     let icon = std::fs::read("assets/tray-icon.rgba").unwrap();
 

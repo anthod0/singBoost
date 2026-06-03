@@ -55,6 +55,7 @@ struct TrayApp {
 struct TrayMenu {
     start_stop: MenuItem,
     restart: MenuItem,
+    open_ui: MenuItem,
     admin: CheckMenuItem,
     autostart: CheckMenuItem,
 }
@@ -269,10 +270,12 @@ impl TrayApp {
             AppState::Running => {
                 self.menu.start_stop.set_text("停止");
                 self.menu.restart.set_enabled(true);
+                self.menu.open_ui.set_enabled(true);
             }
             AppState::Stopped | AppState::Error => {
                 self.menu.start_stop.set_text("启动");
                 self.menu.restart.set_enabled(false);
+                self.menu.open_ui.set_enabled(false);
             }
         }
         self.menu.admin.set_checked(self.config.run_as_admin);
@@ -318,6 +321,7 @@ fn create_menu(run_as_admin: bool, autostart: bool) -> (Menu, TrayMenu) {
         TrayMenu {
             start_stop,
             restart,
+            open_ui,
             admin,
             autostart,
         },
