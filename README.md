@@ -63,6 +63,7 @@ Right-click the tray icon to access:
 - Logs: open a PowerShell window that tails `logs\singboost-runtime.log` in real time.
 - Run as administrator: toggle the administrator privilege setting.
 - Startup on login: toggle the windows startup task.
+- About SingBoost: show SingBoost version and license information.
 - Exit: stop sing-box core, close log windows opened by SingBoost, and exit.
 
 ## Logs
