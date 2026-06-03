@@ -2,6 +2,7 @@
 name = "singboost"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
 
 [dependencies]
 open = "5.3.5"

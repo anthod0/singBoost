@@ -109,3 +109,7 @@ Artifact path:
 ```text
 target/x86_64-pc-windows-gnu/release/singboost.exe
 ```
+
+## License
+
+MIT
