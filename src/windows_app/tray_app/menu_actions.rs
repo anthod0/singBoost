@@ -32,7 +32,7 @@ impl TrayApp {
         self.update_menu();
     }
 
-    pub(super) fn open_web_ui(&self) {
+    pub(super) fn open_web_ui(&mut self) {
         match resolve_web_ui_url(&self.paths) {
             Ok(url) => {
                 if let Err(err) = open::that(&url) {

@@ -87,7 +87,7 @@ impl TrayApp {
         });
     }
 
-    fn handle_tray_icon(&self, event: TrayIconEvent) {
+    fn handle_tray_icon(&mut self, event: TrayIconEvent) {
         if let TrayIconEvent::Click {
             button: MouseButton::Left,
             button_state: MouseButtonState::Up,
