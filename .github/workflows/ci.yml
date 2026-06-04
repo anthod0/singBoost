@@ -76,12 +76,12 @@ jobs:
           $version = $metadata.packages[0].version
           "version=$version" >> $env:GITHUB_OUTPUT
 
-      - name: Package release asset
+      - name: Prepare release asset
         if: github.event_name == 'push' && github.ref_name == 'main'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist | Out-Null
-          Compress-Archive -Path target\release\singboost.exe -DestinationPath dist\singboost-windows-x86_64.zip -Force
+          Copy-Item -Path target\release\singboost.exe -Destination dist\singboost-windows-x86_64.exe -Force
 
       - name: Publish GitHub Release
         if: github.event_name == 'push' && github.ref_name == 'main'
@@ -89,4 +89,4 @@ jobs:
         with:
           tag_name: v${{ steps.package_version.outputs.version }}
           name: v${{ steps.package_version.outputs.version }}
-          files: dist/singboost-windows-x86_64.zip
+          files: dist/singboost-windows-x86_64.exe
