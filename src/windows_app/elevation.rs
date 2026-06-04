@@ -1,4 +1,3 @@
-use singboost::AppPaths;
 use std::error::Error;
 use windows::Win32::UI::Shell::{IsUserAnAdmin, ShellExecuteW};
 use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
@@ -8,14 +7,9 @@ pub(crate) fn is_elevated() -> bool {
     unsafe { IsUserAnAdmin().as_bool() }
 }
 
-pub(crate) fn relaunch_elevated(paths: &AppPaths) -> Result<(), Box<dyn Error>> {
-    let exe = HSTRING::from(
-        paths
-            .app_dir()
-            .join("singboost.exe")
-            .to_string_lossy()
-            .as_ref(),
-    );
+pub(crate) fn relaunch_elevated() -> Result<(), Box<dyn Error>> {
+    let current_exe = std::env::current_exe()?;
+    let exe = HSTRING::from(current_exe.to_string_lossy().as_ref());
     let verb = HSTRING::from("runas");
     let result = unsafe {
         ShellExecuteW(

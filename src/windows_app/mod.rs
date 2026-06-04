@@ -22,7 +22,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     let state_config = load_state_config(&paths)?;
 
     if state_config.run_as_admin && !elevation::is_elevated() {
-        elevation::relaunch_elevated(&paths)?;
+        elevation::relaunch_elevated()?;
         return Ok(());
     }
 

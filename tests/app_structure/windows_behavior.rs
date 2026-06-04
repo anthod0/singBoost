@@ -36,6 +36,20 @@ fn windows_child_processes_are_hidden_unless_user_opens_log_window() {
 }
 
 #[test]
+fn windows_elevation_relaunches_the_current_executable_name() {
+    let elevation_rs = std::fs::read_to_string("src/windows_app/elevation.rs").unwrap();
+
+    assert!(
+        elevation_rs.contains("current_exe"),
+        "UAC relaunch must use the current executable path because release assets may be renamed by users or CI"
+    );
+    assert!(
+        !elevation_rs.contains("join(\"singboost.exe\")"),
+        "UAC relaunch must not hard-code singboost.exe; v0.3.1 release asset is named singboost-windows-x86_64.exe"
+    );
+}
+
+#[test]
 fn windows_app_rejects_duplicate_instances_after_elevation_handoff() {
     let windows_mod = std::fs::read_to_string("src/windows_app/mod.rs").unwrap();
     let single_instance =
