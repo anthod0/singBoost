@@ -27,6 +27,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     }
 
     let _single_instance = single_instance::acquire()?;
+    let _ = autostart::repair_autostart_if_stale(&state_config);
     let app = TrayApp::new(paths, config, state_config)?;
     app.run();
 }

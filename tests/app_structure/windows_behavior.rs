@@ -55,6 +55,29 @@ fn windows_elevation_relaunches_the_current_executable_name() {
 }
 
 #[test]
+fn windows_autostart_uses_current_executable_and_repairs_stale_task_on_startup() {
+    let autostart_rs = std::fs::read_to_string("src/windows_app/autostart.rs").unwrap();
+    let windows_mod = std::fs::read_to_string("src/windows_app/mod.rs").unwrap();
+
+    assert!(
+        autostart_rs.contains("current_exe"),
+        "autostart task creation/repair must use the current executable path so renamed portable binaries work"
+    );
+    assert!(
+        !autostart_rs.contains("join(\"singboost.exe\")"),
+        "autostart must not hard-code singboost.exe; release assets may be renamed by users or CI"
+    );
+    assert!(
+        autostart_rs.contains("repair_autostart_if_stale"),
+        "autostart module should expose a stale-task repair helper"
+    );
+    assert!(
+        windows_mod.contains("autostart::repair_autostart_if_stale(&state_config)"),
+        "Windows startup should silently repair an existing autostart task that points at an old portable path"
+    );
+}
+
+#[test]
 fn windows_app_rejects_duplicate_instances_after_elevation_handoff() {
     let windows_mod = std::fs::read_to_string("src/windows_app/mod.rs").unwrap();
     let single_instance =

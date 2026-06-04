@@ -82,7 +82,7 @@ Right-click for common actions:
 - Open UI and logs.
 - Configuration shortcuts.
 - Toggle administrator mode.
-- Toggle startup on login.
+- Toggle startup on login. SingBoost uses a fixed Windows Task Scheduler task name and silently repairs an existing startup task if a portable upgrade moved or renamed the current executable.
 - Show About information.
 - Exit SingBoost and stop sing-box.
 
