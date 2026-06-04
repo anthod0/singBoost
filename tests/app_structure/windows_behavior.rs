@@ -38,6 +38,7 @@ fn windows_child_processes_are_hidden_unless_user_opens_log_window() {
 #[test]
 fn windows_elevation_relaunches_the_current_executable_name() {
     let elevation_rs = std::fs::read_to_string("src/windows_app/elevation.rs").unwrap();
+    let tray_app = read_tray_app_sources();
 
     assert!(
         elevation_rs.contains("current_exe"),
@@ -46,6 +47,10 @@ fn windows_elevation_relaunches_the_current_executable_name() {
     assert!(
         !elevation_rs.contains("join(\"singboost.exe\")"),
         "UAC relaunch must not hard-code singboost.exe; v0.3.1 release asset is named singboost-windows-x86_64.exe"
+    );
+    assert!(
+        tray_app.contains("relaunch_elevated()") && !tray_app.contains("relaunch_elevated(&paths)"),
+        "tray admin toggle must call the current-executable UAC relaunch helper without stale AppPaths arguments"
     );
 }
 

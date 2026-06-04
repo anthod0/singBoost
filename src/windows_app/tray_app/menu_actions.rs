@@ -172,8 +172,7 @@ impl TrayApp {
             }
         }
         if enabled && !is_elevated() {
-            let paths = self.paths.clone();
-            self.exit_after(|| relaunch_elevated(&paths));
+            self.exit_after(|| relaunch_elevated());
         }
     }
 
