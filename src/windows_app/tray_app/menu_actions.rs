@@ -120,7 +120,13 @@ impl TrayApp {
             return;
         }
         match download_subscription(&self.paths, &subscription) {
-            Ok(target) => self.log(&format!("远程配置已下载：{}", target.to_string_lossy())),
+            Ok(target) => {
+                let message = format!("远程配置已下载：{}", target.to_string_lossy());
+                self.log(&message);
+                if confirm("下载成功", &format!("{message}\n\n是否重启 sing-box？")) {
+                    self.restart_kernel();
+                }
+            }
             Err(err) => {
                 let message = format!("下载远程配置失败：{err}");
                 self.log(&message);

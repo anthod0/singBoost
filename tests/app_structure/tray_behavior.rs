@@ -56,6 +56,18 @@ fn config_submenu_groups_configuration_shortcuts_without_subscription_dialog() {
 }
 
 #[test]
+fn remote_config_download_success_prompts_for_optional_restart() {
+    let tray_app = read_tray_app_sources();
+
+    assert!(
+        tray_app.contains("远程配置已下载")
+            && tray_app.contains("是否重启 sing-box")
+            && tray_app.contains("self.restart_kernel()"),
+        "After a successful remote config download, users should see a success prompt and be able to restart sing-box from it"
+    );
+}
+
+#[test]
 fn about_menu_shows_app_version_and_license() {
     let tray_menu = std::fs::read_to_string("src/windows_app/tray_menu.rs").unwrap();
     let tray_app = read_tray_app_sources();
