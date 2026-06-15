@@ -147,7 +147,7 @@ impl TrayApp {
 
     fn open_log_window(&mut self) {
         let script = format!(
-            "Get-Content -LiteralPath '{}' -Encoding UTF8 -Wait",
+            "Get-Content -LiteralPath '{}' -Encoding UTF8 -Tail 100 -Wait",
             self.paths
                 .runtime_log()
                 .to_string_lossy()

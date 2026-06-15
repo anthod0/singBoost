@@ -92,12 +92,16 @@ fn about_menu_shows_app_version_and_license() {
 }
 
 #[test]
-fn log_window_reads_runtime_log_as_utf8() {
+fn log_window_reads_runtime_log_as_utf8_and_tails_recent_lines() {
     let tray_app = read_tray_app_sources();
 
     assert!(
         tray_app.contains("-Encoding UTF8"),
         "PowerShell log window must decode the UTF-8 runtime log explicitly so Chinese text is not interpreted with the device ANSI code page"
+    );
+    assert!(
+        tray_app.contains("-Tail 100"),
+        "PowerShell log window should only print the most recent 100 lines before following new output"
     );
 }
 
