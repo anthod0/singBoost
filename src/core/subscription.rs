@@ -1,7 +1,10 @@
 use crate::core::config::SubscriptionConfig;
 use crate::core::paths::{AppPaths, append_child, looks_like_windows_path};
 use std::path::{Component, Path, PathBuf};
+use std::time::Duration;
 use thiserror::Error;
+
+pub const DEFAULT_SUBSCRIPTION_DOWNLOAD_TIMEOUT_SECS: u64 = 30;
 
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
@@ -60,14 +63,28 @@ pub fn download_subscription(
         .filter(|url| !url.is_empty())
         .ok_or(SubscriptionError::EmptyUrl)?;
     let target = resolve_subscription_target(paths, subscription.target.as_deref())?;
-    let body = download_body(url)?;
+    let timeout = subscription_download_timeout(subscription);
+    let body = download_body(url, timeout)?;
     write_subscription_content(&target, &body)?;
     Ok(target)
 }
 
+fn subscription_download_timeout(subscription: &SubscriptionConfig) -> Duration {
+    Duration::from_secs(
+        subscription
+            .timeout_secs
+            .unwrap_or(DEFAULT_SUBSCRIPTION_DOWNLOAD_TIMEOUT_SECS),
+    )
+}
+
 #[cfg(not(windows))]
-fn download_body(url: &str) -> Result<Vec<u8>, SubscriptionError> {
-    let mut response = ureq::get(url)
+fn download_body(url: &str, timeout: Duration) -> Result<Vec<u8>, SubscriptionError> {
+    let config = ureq::Agent::config_builder()
+        .timeout_global(Some(timeout))
+        .build();
+    let agent: ureq::Agent = config.into();
+    let mut response = agent
+        .get(url)
         .call()
         .map_err(|err| SubscriptionError::Download(err.to_string()))?;
     response
@@ -77,16 +94,18 @@ fn download_body(url: &str) -> Result<Vec<u8>, SubscriptionError> {
 }
 
 #[cfg(windows)]
-fn download_body(url: &str) -> Result<Vec<u8>, SubscriptionError> {
+fn download_body(url: &str, timeout: Duration) -> Result<Vec<u8>, SubscriptionError> {
     use std::os::windows::process::CommandExt;
 
+    let timeout_ms = timeout.as_millis().min(i32::MAX as u128).to_string();
     let output = std::process::Command::new("powershell.exe")
         .args([
             "-NoProfile",
             "-Command",
-            "$url=$env:SINGBOOST_SUBSCRIPTION_URL; $bytes=(New-Object System.Net.WebClient).DownloadData($url); [Console]::OpenStandardOutput().Write($bytes,0,$bytes.Length)",
+            "$url=$env:SINGBOOST_SUBSCRIPTION_URL; $timeout=[int]$env:SINGBOOST_SUBSCRIPTION_TIMEOUT_MS; $request=[System.Net.HttpWebRequest]::Create($url); $request.Timeout=$timeout; $request.ReadWriteTimeout=$timeout; $response=$request.GetResponse(); try { $stream=$response.GetResponseStream(); $ms=New-Object System.IO.MemoryStream; $stream.CopyTo($ms); $bytes=$ms.ToArray(); [Console]::OpenStandardOutput().Write($bytes,0,$bytes.Length) } finally { if ($response) { $response.Close() } }",
         ])
         .env("SINGBOOST_SUBSCRIPTION_URL", url)
+        .env("SINGBOOST_SUBSCRIPTION_TIMEOUT_MS", timeout_ms)
         .creation_flags(CREATE_NO_WINDOW)
         .output()
         .map_err(|err| SubscriptionError::Download(err.to_string()))?;

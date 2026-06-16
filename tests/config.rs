@@ -22,6 +22,7 @@ fn creates_default_config_when_missing() {
     assert!(content.contains("# [subscription]"));
     assert!(content.contains("# url = \"https://example.com/config.json\""));
     assert!(content.contains("# target = \"config.json\""));
+    assert!(content.contains("# timeout_secs = 30"));
     assert!(!content.contains("\n[subscription]"));
 }
 
@@ -63,7 +64,7 @@ fn loads_optional_subscription_config() {
         paths.config_toml(),
         concat!(
             "[sing_box]\nstart_command = 'sing-box.exe -D . -c config.json run'\n\n",
-            "[subscription]\nurl = 'https://example.com/config.json'\ntarget = 'remote.json'\n",
+            "[subscription]\nurl = 'https://example.com/config.json'\ntarget = 'remote.json'\ntimeout_secs = 10\n",
         ),
     )
     .unwrap();
@@ -75,8 +76,27 @@ fn loads_optional_subscription_config() {
         Some(SubscriptionConfig {
             url: Some("https://example.com/config.json".to_string()),
             target: Some("remote.json".to_string()),
+            timeout_secs: Some(10),
         })
     );
+}
+
+#[test]
+fn rejects_subscription_timeout_out_of_range() {
+    let temp = tempfile::tempdir().unwrap();
+    let paths = AppPaths::new(temp.path().to_path_buf());
+    std::fs::write(
+        paths.config_toml(),
+        concat!(
+            "[sing_box]\nstart_command = 'sing-box.exe -D . -c config.json run'\n\n",
+            "[subscription]\nurl = 'https://example.com/config.json'\ntarget = 'remote.json'\ntimeout_secs = 0\n",
+        ),
+    )
+    .unwrap();
+
+    let error = load_config(&paths).unwrap_err();
+
+    assert!(matches!(error, ConfigError::InvalidSubscriptionTimeout(0)));
 }
 
 #[test]

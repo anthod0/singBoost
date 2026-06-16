@@ -68,9 +68,13 @@ start_command = 'sing-box.exe -D . -c 00-local.json -c config.json run'
 [subscription]
 url = ""
 target = "config.json"
+# Optional, defaults to 30 seconds. Valid range: 1..=300.
+timeout_secs = 30
 ```
 
 In this example, `00-local.json` is loaded before `config.json`, so local scalar fields such as `log.level` take priority over the downloaded remote config. Array fields are appended.
+
+Remote config downloads time out after `subscription.timeout_secs` seconds, or 30 seconds if omitted.
 
 ## Tray Menu
 

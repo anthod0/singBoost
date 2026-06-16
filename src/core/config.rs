@@ -19,6 +19,7 @@ pub struct AppStateConfig {
 pub struct SubscriptionConfig {
     pub url: Option<String>,
     pub target: Option<String>,
+    pub timeout_secs: Option<u64>,
 }
 
 const STATE_FILE_HEADER: &str = "# Managed by SingBoost. Do not edit manually.\n";
@@ -41,6 +42,7 @@ impl AppConfig {
             "# [subscription]\n",
             "# url = \"https://example.com/config.json\"\n",
             "# target = \"config.json\"\n",
+            "# timeout_secs = 30\n",
         )
     }
 }
@@ -55,6 +57,8 @@ pub enum ConfigError {
     MissingRunAsAdmin,
     #[error("missing sing_box.start_command")]
     MissingStartCommand,
+    #[error("subscription.timeout_secs must be between 1 and 300 seconds: {0}")]
+    InvalidSubscriptionTimeout(u64),
     #[error("sing_box.start_command must not be empty")]
     EmptyStartCommand,
 }
@@ -79,6 +83,7 @@ struct RawSingBoxConfig {
 struct RawSubscriptionConfig {
     url: Option<String>,
     target: Option<String>,
+    timeout_secs: Option<u64>,
 }
 
 pub fn ensure_config_file(paths: &AppPaths) -> io::Result<()> {
@@ -110,10 +115,21 @@ pub fn load_config(paths: &AppPaths) -> Result<AppConfig, ConfigError> {
     if start_command.trim().is_empty() {
         return Err(ConfigError::EmptyStartCommand);
     }
-    let subscription = raw.subscription.map(|subscription| SubscriptionConfig {
-        url: subscription.url,
-        target: subscription.target,
-    });
+    let subscription = raw
+        .subscription
+        .map(|subscription| {
+            if let Some(timeout_secs) = subscription.timeout_secs {
+                if !(1..=300).contains(&timeout_secs) {
+                    return Err(ConfigError::InvalidSubscriptionTimeout(timeout_secs));
+                }
+            }
+            Ok(SubscriptionConfig {
+                url: subscription.url,
+                target: subscription.target,
+                timeout_secs: subscription.timeout_secs,
+            })
+        })
+        .transpose()?;
     Ok(AppConfig {
         start_command,
         subscription,
