@@ -90,6 +90,31 @@ fn remote_config_download_runs_in_background_and_displays_progress() {
 }
 
 #[test]
+fn kernel_management_runs_network_and_archive_work_in_background() {
+    let tray_menu = std::fs::read_to_string("src/windows_app/tray_menu.rs").unwrap();
+    let tray_app = read_tray_app_sources();
+
+    assert!(
+        tray_menu.contains("KERNEL_MENU_ID")
+            && tray_menu.contains("\"内核\"")
+            && tray_menu.contains("\"检查内核更新\""),
+        "Tray menu should expose kernel management"
+    );
+    assert!(
+        tray_app.contains("KernelUpdateChecked")
+            && tray_app.contains("KernelUpdatePrepared")
+            && tray_app.contains("std::thread::spawn")
+            && tray_app.contains("prepare_kernel_update(&paths, &update)"),
+        "Release checks, downloads, verification, and extraction should report back from worker threads"
+    );
+    assert!(
+        tray_app.contains("self.menu.update_kernel.set_text(\"处理中...\")")
+            && tray_app.contains("self.menu.update_kernel.set_enabled(false)"),
+        "Kernel update UI should display and enforce its in-progress state"
+    );
+}
+
+#[test]
 fn about_menu_shows_app_version_and_license() {
     let tray_menu = std::fs::read_to_string("src/windows_app/tray_menu.rs").unwrap();
     let tray_app = read_tray_app_sources();

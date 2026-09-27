@@ -32,6 +32,16 @@ impl TrayApp {
             self.menu.download_remote_config.set_text("下载远程配置");
             self.menu.download_remote_config.set_enabled(true);
         }
+        if self.kernel_updating {
+            self.menu.download_remote_config.set_enabled(false);
+            self.menu.update_kernel.set_text("处理中...");
+            self.menu.update_kernel.set_enabled(false);
+            self.menu.start_stop.set_enabled(false);
+            self.menu.restart.set_enabled(false);
+        } else {
+            self.menu.update_kernel.set_text("检查内核更新");
+            self.menu.update_kernel.set_enabled(true);
+        }
         self.menu.admin.set_checked(self.state_config.run_as_admin);
         self.menu.autostart.set_checked(autostart_enabled());
     }

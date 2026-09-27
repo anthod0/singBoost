@@ -1,5 +1,7 @@
 pub mod command;
 pub mod config;
+pub(crate) mod http;
+pub mod kernel_update;
 pub mod paths;
 pub mod preflight;
 pub mod runtime_log;
@@ -10,6 +12,10 @@ pub use command::{CommandLineError, KernelCommand, spawn_command_line};
 pub use config::{
     AppConfig, AppStateConfig, ConfigError, SubscriptionConfig, ensure_config_file,
     ensure_state_file, load_config, load_state_config, save_state_config,
+};
+pub use kernel_update::{
+    KernelUpdate, KernelUpdateError, PreparedKernelUpdate, check_kernel_update,
+    install_kernel_update, prepare_kernel_update,
 };
 pub use paths::AppPaths;
 pub use preflight::{PreflightError, sing_box_tun_enabled, validate_preflight_files};

@@ -11,6 +11,9 @@ pub(crate) const OPEN_CONFIG_ID: &str = "open_config";
 pub(crate) const OPEN_APP_DIR_ID: &str = "open_app_dir";
 pub(crate) const OPEN_SING_BOX_CONFIG_ID: &str = "open_sing_box_config";
 pub(crate) const DOWNLOAD_REMOTE_CONFIG_ID: &str = "download_remote_config";
+pub(crate) const KERNEL_MENU_ID: &str = "kernel_menu";
+pub(crate) const KERNEL_VERSION_ID: &str = "kernel_version";
+pub(crate) const UPDATE_KERNEL_ID: &str = "update_kernel";
 pub(crate) const ADMIN_ID: &str = "admin";
 pub(crate) const AUTOSTART_ID: &str = "autostart";
 pub(crate) const ABOUT_ID: &str = "about";
@@ -21,6 +24,8 @@ pub(crate) struct TrayMenu {
     pub(crate) restart: MenuItem,
     pub(crate) open_ui: MenuItem,
     pub(crate) download_remote_config: MenuItem,
+    pub(crate) kernel_version: MenuItem,
+    pub(crate) update_kernel: MenuItem,
     pub(crate) admin: CheckMenuItem,
     pub(crate) autostart: CheckMenuItem,
 }
@@ -55,6 +60,15 @@ pub(crate) fn create_menu(run_as_admin: bool, autostart: bool) -> (Menu, TrayMen
         ],
     )
     .expect("create config submenu");
+    let kernel_version = MenuItem::with_id(KERNEL_VERSION_ID, "当前版本：未检查", false, None);
+    let update_kernel = MenuItem::with_id(UPDATE_KERNEL_ID, "检查内核更新", true, None);
+    let kernel_menu = Submenu::with_id_and_items(
+        KERNEL_MENU_ID,
+        "内核",
+        true,
+        &[&kernel_version, &update_kernel],
+    )
+    .expect("create kernel submenu");
     let admin = CheckMenuItem::with_id(ADMIN_ID, "以管理员身份运行", true, run_as_admin, None);
     let autostart = CheckMenuItem::with_id(AUTOSTART_ID, "开机自启", true, autostart, None);
     let about = MenuItem::with_id(ABOUT_ID, "关于", true, None);
@@ -67,6 +81,7 @@ pub(crate) fn create_menu(run_as_admin: bool, autostart: bool) -> (Menu, TrayMen
         &open_ui,
         &log,
         &config_menu,
+        &kernel_menu,
         &settings_separator,
         &admin,
         &autostart,
@@ -81,6 +96,8 @@ pub(crate) fn create_menu(run_as_admin: bool, autostart: bool) -> (Menu, TrayMen
             restart,
             open_ui,
             download_remote_config,
+            kernel_version,
+            update_kernel,
             admin,
             autostart,
         },

@@ -4,6 +4,8 @@ fn source_is_split_by_responsibility() {
         "src/core/paths.rs",
         "src/core/config.rs",
         "src/core/command.rs",
+        "src/core/http.rs",
+        "src/core/kernel_update.rs",
         "src/core/preflight.rs",
         "src/core/runtime_log.rs",
         "src/core/web_ui.rs",

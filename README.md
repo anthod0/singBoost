@@ -9,6 +9,7 @@ A minimal Windows launcher for the sing-box core.
 - Quick open the sing-box Web UI
 - Configure startup on login
 - Download a complete remote sing-box JSON config on demand
+- Download or update the sing-box core from official stable releases
 - Windows system tray icon
 
 ## Non-goals
@@ -20,18 +21,18 @@ A minimal Windows launcher for the sing-box core.
 
 ## Prerequisites
 
-- sing-box 1.14
-- A complete sing-box config file
-- `sing-box.exe`
+- A complete sing-box 1.14 config file
+- The official sing-box Windows runtime files, or use the tray menu to download them
 
 ## Target Directory Layout
 
-Place `singboost.exe` in the same directory as `sing-box.exe`:
+Place `singboost.exe` in the target application directory. `sing-box.exe` can be provided manually or downloaded from the tray menu:
 
 ```text
 <your_app_dir>\
   singboost.exe
   sing-box.exe
+  libcronet.dll
   config.json
 ```
 
@@ -77,6 +78,24 @@ In this example, `00-local.json` is loaded before `config.json`, so local scalar
 
 Remote config downloads time out after `subscription.timeout_secs` seconds, or 30 seconds if omitted.
 
+## Core Management
+
+The **Kernel** tray submenu checks the official stable release published by
+[SagerNet/sing-box](https://github.com/SagerNet/sing-box/releases). SingBoost selects the
+Windows AMD64 or ARM64 archive that matches its own build architecture.
+
+A user-confirmed installation or update:
+
+- runs in the background while release information and the archive are downloaded;
+- verifies the archive size and GitHub-provided SHA-256 digest;
+- extracts only the expected `sing-box.exe` and `libcronet.dll`, then verifies the executable's reported version;
+- stops a running core only after the replacement is ready;
+- restores the previous runtime files if replacement fails; and
+- restarts the core if it was running before the update.
+
+Only the latest stable release is supported. Pre-releases, automatic updates, and historical
+version selection are not provided. Downloading the core does not modify sing-box configuration.
+
 ## Web UI
 
 SingBoost supports both Web UI configurations available in sing-box 1.14. If both are enabled, the native sing-box API Dashboard takes priority.
@@ -120,6 +139,7 @@ Right-click for common actions:
 - Manage sing-box: start, stop, or restart the core.
 - Open UI and logs.
 - Configuration shortcuts.
+- Check, download, or update the sing-box core.
 - Toggle administrator mode.
 - Toggle startup on login. SingBoost uses a fixed Windows Task Scheduler task name and silently repairs an existing startup task if a portable upgrade moved or renamed the current executable.
 - Show About information.

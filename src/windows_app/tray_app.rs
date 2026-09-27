@@ -1,10 +1,13 @@
 mod kernel;
+mod kernel_update;
 mod menu_actions;
 mod ui_state;
 
 use crate::windows_app::autostart::autostart_enabled;
 use crate::windows_app::tray_menu::{TrayMenu, create_icon, create_menu};
-use singboost::{AppConfig, AppPaths, AppState, AppStateConfig, RuntimeLog};
+use singboost::{
+    AppConfig, AppPaths, AppState, AppStateConfig, KernelUpdate, PreparedKernelUpdate, RuntimeLog,
+};
 use std::error::Error;
 use std::path::PathBuf;
 use std::process::Child;
@@ -19,6 +22,8 @@ enum UserEvent {
     Menu(MenuEvent),
     TrayIcon(TrayIconEvent),
     SubscriptionDownloadFinished(Result<PathBuf, String>),
+    KernelUpdateChecked(Result<KernelUpdate, String>),
+    KernelUpdatePrepared(Result<PreparedKernelUpdate, String>),
 }
 
 pub(crate) struct TrayApp {
@@ -30,6 +35,7 @@ pub(crate) struct TrayApp {
     kernel: Option<Child>,
     log_windows: Vec<Child>,
     subscription_downloading: bool,
+    kernel_updating: bool,
     menu: TrayMenu,
     _tray: Option<TrayIcon>,
 }
@@ -62,6 +68,7 @@ impl TrayApp {
             kernel: None,
             log_windows: Vec::new(),
             subscription_downloading: false,
+            kernel_updating: false,
             menu: tray_menu,
             _tray: Some(tray),
         };
@@ -96,6 +103,12 @@ impl TrayApp {
                 Event::UserEvent(UserEvent::TrayIcon(event)) => self.handle_tray_icon(event),
                 Event::UserEvent(UserEvent::SubscriptionDownloadFinished(result)) => {
                     self.finish_subscription_download(result)
+                }
+                Event::UserEvent(UserEvent::KernelUpdateChecked(result)) => {
+                    self.finish_kernel_update_check(result, proxy.clone())
+                }
+                Event::UserEvent(UserEvent::KernelUpdatePrepared(result)) => {
+                    self.finish_kernel_update_prepare(result)
                 }
                 Event::MainEventsCleared => self.poll_kernel_exit(),
                 _ => {}

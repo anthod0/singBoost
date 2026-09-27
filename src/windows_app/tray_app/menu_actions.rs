@@ -7,6 +7,7 @@ use crate::windows_app::show_info;
 use crate::windows_app::tray_menu::{
     ABOUT_ID, ADMIN_ID, AUTOSTART_ID, DOWNLOAD_REMOTE_CONFIG_ID, EXIT_ID, LOG_ID, OPEN_APP_DIR_ID,
     OPEN_CONFIG_ID, OPEN_SING_BOX_CONFIG_ID, OPEN_UI_ID, RESTART_ID, START_STOP_ID,
+    UPDATE_KERNEL_ID,
 };
 use singboost::{
     AppState, download_subscription, load_config, resolve_subscription_target, resolve_web_ui_url,
@@ -32,6 +33,7 @@ impl TrayApp {
             OPEN_APP_DIR_ID => self.open_app_dir(),
             OPEN_SING_BOX_CONFIG_ID => self.open_sing_box_config_file(),
             DOWNLOAD_REMOTE_CONFIG_ID => self.download_remote_config(event_proxy),
+            UPDATE_KERNEL_ID => self.check_for_kernel_update(event_proxy),
             ADMIN_ID => self.toggle_admin(),
             AUTOSTART_ID => self.toggle_autostart(),
             ABOUT_ID => self.show_about(),
