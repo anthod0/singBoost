@@ -20,6 +20,7 @@ A minimal Windows launcher for the sing-box core.
 
 ## Prerequisites
 
+- sing-box 1.14
 - A complete sing-box config file
 - `sing-box.exe`
 
@@ -75,6 +76,40 @@ timeout_secs = 30
 In this example, `00-local.json` is loaded before `config.json`, so local scalar fields such as `log.level` take priority over the downloaded remote config. Array fields are appended.
 
 Remote config downloads time out after `subscription.timeout_secs` seconds, or 30 seconds if omitted.
+
+## Web UI
+
+SingBoost supports both Web UI configurations available in sing-box 1.14. If both are enabled, the native sing-box API Dashboard takes priority.
+
+Native API Dashboard:
+
+```json
+{
+  "services": [
+    {
+      "type": "api",
+      "listen": "127.0.0.1",
+      "listen_port": 9090,
+      "dashboard": true
+    }
+  ]
+}
+```
+
+Clash API UI remains supported:
+
+```json
+{
+  "experimental": {
+    "clash_api": {
+      "external_controller": "127.0.0.1:9090",
+      "external_ui": "ui"
+    }
+  }
+}
+```
+
+SingBoost opens `/dashboard/` for the native API service and `/ui/` for the Clash API. It does not create or migrate either configuration.
 
 ## Tray Menu
 
