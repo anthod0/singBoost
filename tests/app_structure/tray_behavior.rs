@@ -46,7 +46,8 @@ fn config_submenu_groups_configuration_shortcuts_without_subscription_dialog() {
         tray_app.contains("OPEN_CONFIG_ID => self.open_config_file()")
             && tray_app.contains("OPEN_APP_DIR_ID => self.open_app_dir()")
             && tray_app.contains("OPEN_SING_BOX_CONFIG_ID => self.open_sing_box_config_file()")
-            && tray_app.contains("DOWNLOAD_REMOTE_CONFIG_ID => self.download_remote_config()"),
+            && tray_app
+                .contains("DOWNLOAD_REMOTE_CONFIG_ID => self.download_remote_config(event_proxy)"),
         "Configuration submenu actions should be routed to dedicated handlers"
     );
     assert!(
@@ -64,6 +65,27 @@ fn remote_config_download_success_prompts_for_optional_restart() {
             && tray_app.contains("是否重启 sing-box")
             && tray_app.contains("self.restart_kernel()"),
         "After a successful remote config download, users should see a success prompt and be able to restart sing-box from it"
+    );
+}
+
+#[test]
+fn remote_config_download_runs_in_background_and_displays_progress() {
+    let tray_menu = std::fs::read_to_string("src/windows_app/tray_menu.rs").unwrap();
+    let tray_app = read_tray_app_sources();
+
+    assert!(
+        tray_app.contains("std::thread::spawn")
+            && tray_app.contains("SubscriptionDownloadFinished")
+            && tray_app.contains("event_proxy.send_event"),
+        "Remote config download should run outside the tray event thread and report completion through a user event"
+    );
+    assert!(
+        tray_menu.contains("download_remote_config: MenuItem")
+            && tray_app.contains("self.menu.download_remote_config.set_text(\"下载中...\")")
+            && tray_app.contains("self.menu.download_remote_config.set_enabled(false)")
+            && tray_app.contains("self.menu.download_remote_config.set_text(\"下载远程配置\")")
+            && tray_app.contains("self.menu.download_remote_config.set_enabled(true)"),
+        "The download item should display and enforce its in-progress state"
     );
 }
 

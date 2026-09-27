@@ -1,4 +1,4 @@
-use super::TrayApp;
+use super::{TrayApp, UserEvent};
 use crate::windows_app::autostart::{autostart_enabled, remove_autostart, set_autostart};
 use crate::windows_app::elevation::{is_elevated, relaunch_elevated};
 use crate::windows_app::error_dialog::{confirm, show_error};
@@ -14,10 +14,11 @@ use singboost::{
 };
 use std::error::Error;
 use std::process::Command;
+use tao::event_loop::EventLoopProxy;
 use tray_icon::menu::MenuId;
 
 impl TrayApp {
-    pub(super) fn handle_menu(&mut self, id: MenuId) {
+    pub(super) fn handle_menu(&mut self, id: MenuId, event_proxy: EventLoopProxy<UserEvent>) {
         match id.as_ref() {
             START_STOP_ID => match self.state {
                 AppState::Running => self.stop_kernel(),
@@ -30,7 +31,7 @@ impl TrayApp {
             OPEN_CONFIG_ID => self.open_config_file(),
             OPEN_APP_DIR_ID => self.open_app_dir(),
             OPEN_SING_BOX_CONFIG_ID => self.open_sing_box_config_file(),
-            DOWNLOAD_REMOTE_CONFIG_ID => self.download_remote_config(),
+            DOWNLOAD_REMOTE_CONFIG_ID => self.download_remote_config(event_proxy),
             ADMIN_ID => self.toggle_admin(),
             AUTOSTART_ID => self.toggle_autostart(),
             ABOUT_ID => self.show_about(),
@@ -81,7 +82,11 @@ impl TrayApp {
         }
     }
 
-    fn download_remote_config(&mut self) {
+    fn download_remote_config(&mut self, event_proxy: EventLoopProxy<UserEvent>) {
+        if self.subscription_downloading {
+            return;
+        }
+
         self.config = match load_config(&self.paths) {
             Ok(config) => config,
             Err(err) => {
@@ -119,7 +124,25 @@ impl TrayApp {
         {
             return;
         }
-        match download_subscription(&self.paths, &subscription) {
+        self.subscription_downloading = true;
+        self.update_menu();
+
+        let paths = self.paths.clone();
+        std::thread::spawn(move || {
+            let result =
+                download_subscription(&paths, &subscription).map_err(|err| err.to_string());
+            let _ = event_proxy.send_event(UserEvent::SubscriptionDownloadFinished(result));
+        });
+    }
+
+    pub(super) fn finish_subscription_download(
+        &mut self,
+        result: Result<std::path::PathBuf, String>,
+    ) {
+        self.subscription_downloading = false;
+        self.update_menu();
+
+        match result {
             Ok(target) => {
                 let message = format!("远程配置已下载：{}", target.to_string_lossy());
                 self.log(&message);

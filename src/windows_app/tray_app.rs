@@ -6,6 +6,7 @@ use crate::windows_app::autostart::autostart_enabled;
 use crate::windows_app::tray_menu::{TrayMenu, create_icon, create_menu};
 use singboost::{AppConfig, AppPaths, AppState, AppStateConfig, RuntimeLog};
 use std::error::Error;
+use std::path::PathBuf;
 use std::process::Child;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -13,6 +14,12 @@ use tao::event::{Event, StartCause};
 use tao::event_loop::{ControlFlow, EventLoopBuilder};
 use tray_icon::menu::MenuEvent;
 use tray_icon::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
+
+enum UserEvent {
+    Menu(MenuEvent),
+    TrayIcon(TrayIconEvent),
+    SubscriptionDownloadFinished(Result<PathBuf, String>),
+}
 
 pub(crate) struct TrayApp {
     paths: AppPaths,
@@ -22,6 +29,7 @@ pub(crate) struct TrayApp {
     runtime_log: Arc<Mutex<RuntimeLog>>,
     kernel: Option<Child>,
     log_windows: Vec<Child>,
+    subscription_downloading: bool,
     menu: TrayMenu,
     _tray: Option<TrayIcon>,
 }
@@ -53,6 +61,7 @@ impl TrayApp {
             runtime_log,
             kernel: None,
             log_windows: Vec::new(),
+            subscription_downloading: false,
             menu: tray_menu,
             _tray: Some(tray),
         };
@@ -62,18 +71,15 @@ impl TrayApp {
     }
 
     pub(crate) fn run(mut self) -> ! {
-        enum UserEvent {
-            Menu(MenuEvent),
-            TrayIcon(TrayIconEvent),
-        }
         let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
         let proxy = event_loop.create_proxy();
         let menu_proxy = proxy.clone();
         MenuEvent::set_event_handler(Some(move |event| {
             let _ = menu_proxy.send_event(UserEvent::Menu(event));
         }));
+        let tray_proxy = proxy.clone();
         TrayIconEvent::set_event_handler(Some(move |event| {
-            let _ = proxy.send_event(UserEvent::TrayIcon(event));
+            let _ = tray_proxy.send_event(UserEvent::TrayIcon(event));
         }));
 
         event_loop.run(move |event, _, control_flow| {
@@ -84,8 +90,13 @@ impl TrayApp {
             }
             match event {
                 Event::NewEvents(StartCause::Init) => {}
-                Event::UserEvent(UserEvent::Menu(event)) => self.handle_menu(event.id().clone()),
+                Event::UserEvent(UserEvent::Menu(event)) => {
+                    self.handle_menu(event.id().clone(), proxy.clone())
+                }
                 Event::UserEvent(UserEvent::TrayIcon(event)) => self.handle_tray_icon(event),
+                Event::UserEvent(UserEvent::SubscriptionDownloadFinished(result)) => {
+                    self.finish_subscription_download(result)
+                }
                 Event::MainEventsCleared => self.poll_kernel_exit(),
                 _ => {}
             }

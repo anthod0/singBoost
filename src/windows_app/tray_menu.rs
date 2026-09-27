@@ -20,6 +20,7 @@ pub(crate) struct TrayMenu {
     pub(crate) start_stop: MenuItem,
     pub(crate) restart: MenuItem,
     pub(crate) open_ui: MenuItem,
+    pub(crate) download_remote_config: MenuItem,
     pub(crate) admin: CheckMenuItem,
     pub(crate) autostart: CheckMenuItem,
 }
@@ -79,6 +80,7 @@ pub(crate) fn create_menu(run_as_admin: bool, autostart: bool) -> (Menu, TrayMen
             start_stop,
             restart,
             open_ui,
+            download_remote_config,
             admin,
             autostart,
         },

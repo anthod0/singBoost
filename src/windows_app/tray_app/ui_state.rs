@@ -25,6 +25,13 @@ impl TrayApp {
                 self.menu.open_ui.set_enabled(false);
             }
         }
+        if self.subscription_downloading {
+            self.menu.download_remote_config.set_text("下载中...");
+            self.menu.download_remote_config.set_enabled(false);
+        } else {
+            self.menu.download_remote_config.set_text("下载远程配置");
+            self.menu.download_remote_config.set_enabled(true);
+        }
         self.menu.admin.set_checked(self.state_config.run_as_admin);
         self.menu.autostart.set_checked(autostart_enabled());
     }
