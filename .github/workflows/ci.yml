@@ -26,15 +26,14 @@ jobs:
         id: version
         shell: bash
         run: |
-          if [[ "${{ github.event_name }}" != "push" || "${{ github.ref_name }}" != "main" ]]; then
-            echo "should_build=true" >> "$GITHUB_OUTPUT"
-            exit 0
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            before="${{ github.event.pull_request.base.sha }}"
+          else
+            before="${{ github.event.before }}"
           fi
 
-          before="${{ github.event.before }}"
           if [[ -z "$before" || "$before" =~ ^0+$ ]]; then
-            echo "should_build=true" >> "$GITHUB_OUTPUT"
-            exit 0
+            before="$(git hash-object -t tree /dev/null)"
           fi
 
           if git diff --unified=0 "$before" "${{ github.sha }}" -- Cargo.toml | grep -E '^[+-]version[[:space:]]*='; then
