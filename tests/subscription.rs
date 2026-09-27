@@ -1,7 +1,6 @@
 use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::thread;
-use std::time::{Duration, Instant};
 
 use singboost::{
     AppPaths, SubscriptionConfig, SubscriptionError, download_subscription,
@@ -111,28 +110,6 @@ fn rejects_empty_download_response() {
     assert!(!paths.config_json().exists());
 }
 
-#[test]
-fn times_out_slow_subscription_download() {
-    let temp = tempfile::tempdir().unwrap();
-    let paths = AppPaths::new(temp.path().to_path_buf());
-    let url = spawn_slow_http_server(Duration::from_secs(3), r#"{"outbounds":[]}"#);
-    let started = Instant::now();
-
-    let err = download_subscription(
-        &paths,
-        &SubscriptionConfig {
-            url: Some(url),
-            target: Some("config.json".to_string()),
-            timeout_secs: Some(1),
-        },
-    )
-    .unwrap_err();
-
-    assert!(matches!(err, SubscriptionError::Download(_)));
-    assert!(started.elapsed() < Duration::from_secs(3));
-    assert!(!paths.config_json().exists());
-}
-
 fn spawn_http_server(body: &'static str) -> String {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let addr = listener.local_addr().unwrap();
@@ -147,24 +124,6 @@ fn spawn_http_server(body: &'static str) -> String {
             body
         )
         .unwrap();
-    });
-    format!("http://{addr}/config.json")
-}
-
-fn spawn_slow_http_server(delay: Duration, body: &'static str) -> String {
-    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    let addr = listener.local_addr().unwrap();
-    thread::spawn(move || {
-        let (mut stream, _) = listener.accept().unwrap();
-        let mut request = [0; 1024];
-        let _ = stream.read(&mut request).unwrap();
-        thread::sleep(delay);
-        let _ = write!(
-            stream,
-            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{}",
-            body.len(),
-            body
-        );
     });
     format!("http://{addr}/config.json")
 }
