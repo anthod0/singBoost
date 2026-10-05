@@ -1,10 +1,11 @@
 [package]
 name = "singboost"
-version = "0.3.8"
+version = "0.3.9"
 edition = "2024"
 license = "MIT"
 
 [dependencies]
+base64 = "0.22.1"
 open = "5.3.5"
 semver = "1.0.28"
 serde = { version = "1.0.228", features = ["derive"] }

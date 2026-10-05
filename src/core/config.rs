@@ -17,9 +17,21 @@ pub struct AppStateConfig {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubscriptionConfig {
+    pub username: Option<String>,
+    pub password: Option<String>,
     pub url: Option<String>,
     pub target: Option<String>,
     pub timeout_secs: Option<u64>,
+}
+
+impl SubscriptionConfig {
+    pub(crate) fn validate_basic_auth(&self) -> Result<(), ConfigError> {
+        match (&self.username, &self.password) {
+            (None, None) => Ok(()),
+            (Some(username), Some(_)) if !username.is_empty() && !username.contains(':') => Ok(()),
+            _ => Err(ConfigError::InvalidSubscriptionBasicAuth),
+        }
+    }
 }
 
 const STATE_FILE_HEADER: &str = "# Managed by SingBoost. Do not edit manually.\n";
@@ -43,6 +55,9 @@ impl AppConfig {
             "# url = \"https://example.com/config.json\"\n",
             "# target = \"config.json\"\n",
             "# timeout_secs = 30\n",
+            "# 可选 Basic Auth：username 和 password 必须同时填写。建议使用 HTTPS。\n",
+            "# username = \"your-username\"\n",
+            "# password = \"your-password\"\n",
         )
     }
 }
@@ -57,6 +72,10 @@ pub enum ConfigError {
     MissingRunAsAdmin,
     #[error("missing sing_box.start_command")]
     MissingStartCommand,
+    #[error(
+        "subscription Basic Auth requires both username and password; username must be non-empty and must not contain ':'"
+    )]
+    InvalidSubscriptionBasicAuth,
     #[error("subscription.timeout_secs must be between 1 and 300 seconds: {0}")]
     InvalidSubscriptionTimeout(u64),
     #[error("sing_box.start_command must not be empty")]
@@ -81,6 +100,8 @@ struct RawSingBoxConfig {
 
 #[derive(Debug, Deserialize)]
 struct RawSubscriptionConfig {
+    username: Option<String>,
+    password: Option<String>,
     url: Option<String>,
     target: Option<String>,
     timeout_secs: Option<u64>,
@@ -123,11 +144,15 @@ pub fn load_config(paths: &AppPaths) -> Result<AppConfig, ConfigError> {
                     return Err(ConfigError::InvalidSubscriptionTimeout(timeout_secs));
                 }
             }
-            Ok(SubscriptionConfig {
+            let subscription = SubscriptionConfig {
+                username: subscription.username,
+                password: subscription.password,
                 url: subscription.url,
                 target: subscription.target,
                 timeout_secs: subscription.timeout_secs,
-            })
+            };
+            subscription.validate_basic_auth()?;
+            Ok(subscription)
         })
         .transpose()?;
     Ok(AppConfig {

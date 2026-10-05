@@ -1,5 +1,5 @@
 use crate::core::config::SubscriptionConfig;
-use crate::core::http::get_bytes;
+use crate::core::http::get_bytes_with_basic_auth;
 use crate::core::paths::{AppPaths, append_child, looks_like_windows_path};
 use std::path::{Component, Path, PathBuf};
 use std::time::Duration;
@@ -63,7 +63,14 @@ pub fn download_subscription(
         .ok_or(SubscriptionError::EmptyUrl)?;
     let target = resolve_subscription_target(paths, subscription.target.as_deref())?;
     let timeout = subscription_download_timeout(subscription);
-    let body = get_bytes(url, timeout, MAX_SUBSCRIPTION_DOWNLOAD_SIZE)
+    subscription
+        .validate_basic_auth()
+        .map_err(|err| SubscriptionError::Download(err.to_string()))?;
+    let credentials = subscription
+        .username
+        .as_deref()
+        .zip(subscription.password.as_deref());
+    let body = get_bytes_with_basic_auth(url, timeout, MAX_SUBSCRIPTION_DOWNLOAD_SIZE, credentials)
         .map_err(|err| SubscriptionError::Download(err.to_string()))?;
     write_subscription_content(&target, &body)?;
     Ok(target)

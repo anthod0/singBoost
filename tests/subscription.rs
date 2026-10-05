@@ -68,6 +68,8 @@ fn downloads_subscription_to_configured_target_as_pretty_json() {
             url: Some(url),
             target: Some("downloaded.json".to_string()),
             timeout_secs: None,
+            username: None,
+            password: None,
         },
     )
     .unwrap();
@@ -102,12 +104,73 @@ fn rejects_empty_download_response() {
             url: Some(url),
             target: Some("config.json".to_string()),
             timeout_secs: None,
+            username: None,
+            password: None,
         },
     )
     .unwrap_err();
 
     assert!(matches!(err, SubscriptionError::EmptyResponse));
     assert!(!paths.config_json().exists());
+}
+
+#[test]
+fn downloads_with_basic_auth_and_preserves_config_when_credentials_are_wrong() {
+    for (password, succeeds) in [("p@ss:word", true), ("wrong", false)] {
+        let temp = tempfile::tempdir().unwrap();
+        let paths = AppPaths::new(temp.path().to_path_buf());
+        std::fs::write(paths.config_json(), "old").unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            stream
+                .set_read_timeout(Some(std::time::Duration::from_secs(5)))
+                .unwrap();
+            let mut request = Vec::new();
+            let mut byte = [0];
+            while !request.ends_with(b"\r\n\r\n") {
+                stream.read_exact(&mut byte).unwrap();
+                request.push(byte[0]);
+            }
+            let authorized = String::from_utf8(request)
+                .unwrap()
+                .lines()
+                .any(|line| line.eq_ignore_ascii_case("Authorization: Basic dXNlcjpwQHNzOndvcmQ="));
+            let (status, body) = if authorized {
+                ("200 OK", r#"{"authenticated":true}"#)
+            } else {
+                ("401 Unauthorized", "")
+            };
+            write!(
+                stream,
+                "HTTP/1.1 {status}\r\nConnection: close\r\nContent-Length: {}\r\n\r\n{body}",
+                body.len()
+            )
+            .unwrap();
+        });
+        let result = download_subscription(
+            &paths,
+            &SubscriptionConfig {
+                url: Some(format!("http://{addr}/config.json")),
+                target: Some("config.json".into()),
+                timeout_secs: Some(5),
+                username: Some("user".into()),
+                password: Some(password.into()),
+            },
+        );
+        server.join().unwrap();
+        if succeeds {
+            result.unwrap();
+            let config: serde_json::Value =
+                serde_json::from_str(&std::fs::read_to_string(paths.config_json()).unwrap())
+                    .unwrap();
+            assert_eq!(config, serde_json::json!({"authenticated": true}));
+        } else {
+            assert!(matches!(result, Err(SubscriptionError::Download(_))));
+            assert_eq!(std::fs::read_to_string(paths.config_json()).unwrap(), "old");
+        }
+    }
 }
 
 fn spawn_http_server(body: &'static str) -> String {

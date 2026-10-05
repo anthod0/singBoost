@@ -1,3 +1,4 @@
+use base64::Engine;
 use std::time::Duration;
 use thiserror::Error;
 
@@ -8,18 +9,41 @@ pub(crate) enum HttpError {
 }
 
 pub(crate) fn get_bytes(url: &str, timeout: Duration, max_size: u64) -> Result<Vec<u8>, HttpError> {
-    get_bytes_impl(url, timeout, max_size)
+    get_bytes_impl(url, timeout, max_size, None)
+}
+
+pub(crate) fn get_bytes_with_basic_auth(
+    url: &str,
+    timeout: Duration,
+    max_size: u64,
+    credentials: Option<(&str, &str)>,
+) -> Result<Vec<u8>, HttpError> {
+    let authorization = credentials.map(|(username, password)| {
+        format!(
+            "Basic {}",
+            base64::engine::general_purpose::STANDARD.encode(format!("{username}:{password}"))
+        )
+    });
+    get_bytes_impl(url, timeout, max_size, authorization.as_deref())
 }
 
 #[cfg(not(windows))]
-fn get_bytes_impl(url: &str, timeout: Duration, max_size: u64) -> Result<Vec<u8>, HttpError> {
+fn get_bytes_impl(
+    url: &str,
+    timeout: Duration,
+    max_size: u64,
+    authorization: Option<&str>,
+) -> Result<Vec<u8>, HttpError> {
     let config = ureq::Agent::config_builder()
         .timeout_global(Some(timeout))
         .user_agent(concat!("SingBoost/", env!("CARGO_PKG_VERSION")))
         .build();
     let agent: ureq::Agent = config.into();
-    let mut response = agent
-        .get(url)
+    let mut request = agent.get(url);
+    if let Some(authorization) = authorization {
+        request = request.header("Authorization", authorization);
+    }
+    let mut response = request
         .call()
         .map_err(|err| HttpError::Request(err.to_string()))?;
     let body = response
@@ -38,7 +62,12 @@ fn get_bytes_impl(url: &str, timeout: Duration, max_size: u64) -> Result<Vec<u8>
 }
 
 #[cfg(windows)]
-fn get_bytes_impl(url: &str, timeout: Duration, max_size: u64) -> Result<Vec<u8>, HttpError> {
+fn get_bytes_impl(
+    url: &str,
+    timeout: Duration,
+    max_size: u64,
+    authorization: Option<&str>,
+) -> Result<Vec<u8>, HttpError> {
     use std::os::windows::process::CommandExt;
 
     const CREATE_NO_WINDOW: u32 = 0x0800_0000;
@@ -49,9 +78,10 @@ fn get_bytes_impl(url: &str, timeout: Duration, max_size: u64) -> Result<Vec<u8>
         .args([
             "-NoProfile",
             "-Command",
-            "$ErrorActionPreference='Stop'; $url=$env:SINGBOOST_HTTP_URL; $timeout=[int]$env:SINGBOOST_HTTP_TIMEOUT_MS; $max=[long]$env:SINGBOOST_HTTP_MAX_SIZE; $deadline=[DateTime]::UtcNow.AddMilliseconds($timeout); $request=[System.Net.HttpWebRequest]::Create($url); $request.Timeout=$timeout; $request.ReadWriteTimeout=$timeout; $request.UserAgent=$env:SINGBOOST_HTTP_USER_AGENT; $response=$request.GetResponse(); try { if ($response.ContentLength -gt $max) { throw 'response exceeds size limit' }; $stream=$response.GetResponseStream(); $ms=New-Object System.IO.MemoryStream; $buffer=New-Object byte[] 81920; $total=0L; while ($true) { $remaining=[int][Math]::Max(0,($deadline-[DateTime]::UtcNow).TotalMilliseconds); if ($remaining -le 0) { throw 'request timed out' }; $task=$stream.ReadAsync($buffer,0,$buffer.Length); if (!$task.Wait($remaining)) { $request.Abort(); throw 'request timed out' }; $read=$task.Result; if ($read -le 0) { break }; $total += $read; if ($total -gt $max) { throw 'response exceeds size limit' }; $ms.Write($buffer,0,$read) }; $bytes=$ms.ToArray(); [Console]::OpenStandardOutput().Write($bytes,0,$bytes.Length) } finally { if ($response) { $response.Close() } }",
+            "$ErrorActionPreference='Stop'; $url=$env:SINGBOOST_HTTP_URL; $timeout=[int]$env:SINGBOOST_HTTP_TIMEOUT_MS; $max=[long]$env:SINGBOOST_HTTP_MAX_SIZE; $deadline=[DateTime]::UtcNow.AddMilliseconds($timeout); $request=[System.Net.HttpWebRequest]::Create($url); $request.Timeout=$timeout; $request.ReadWriteTimeout=$timeout; $request.UserAgent=$env:SINGBOOST_HTTP_USER_AGENT; if ($env:SINGBOOST_HTTP_AUTHORIZATION) { $request.Headers['Authorization']=$env:SINGBOOST_HTTP_AUTHORIZATION }; $response=$request.GetResponse(); try { if ($response.ContentLength -gt $max) { throw 'response exceeds size limit' }; $stream=$response.GetResponseStream(); $ms=New-Object System.IO.MemoryStream; $buffer=New-Object byte[] 81920; $total=0L; while ($true) { $remaining=[int][Math]::Max(0,($deadline-[DateTime]::UtcNow).TotalMilliseconds); if ($remaining -le 0) { throw 'request timed out' }; $task=$stream.ReadAsync($buffer,0,$buffer.Length); if (!$task.Wait($remaining)) { $request.Abort(); throw 'request timed out' }; $read=$task.Result; if ($read -le 0) { break }; $total += $read; if ($total -gt $max) { throw 'response exceeds size limit' }; $ms.Write($buffer,0,$read) }; $bytes=$ms.ToArray(); [Console]::OpenStandardOutput().Write($bytes,0,$bytes.Length) } finally { if ($response) { $response.Close() } }",
         ])
         .env("SINGBOOST_HTTP_URL", url)
+        .env("SINGBOOST_HTTP_AUTHORIZATION", authorization.unwrap_or(""))
         .env("SINGBOOST_HTTP_TIMEOUT_MS", timeout_ms)
         .env("SINGBOOST_HTTP_MAX_SIZE", max_size_text)
         .env(

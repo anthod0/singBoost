@@ -48,6 +48,20 @@ start_command = 'sing-box.exe -D . -c config.json run'
 
 To enable remote config downloads, uncomment and fill in the `[subscription]` example in `boost.toml`.
 
+### Basic Auth
+
+For a subscription that requires HTTP Basic Auth, set both credentials in `boost.toml`:
+
+```toml
+[subscription]
+url = "https://example.com/config.json"
+target = "config.json"
+username = "your-username"
+password = "your-password"
+```
+
+Omit both fields for anonymous downloads. Providing only one is an error. The username must be non-empty and cannot contain `:`; an empty password is allowed. Credentials are stored as plain text in `boost.toml`. Use HTTPS: Basic Auth does not encrypt credentials.
+
 ### Sing-box Config Merging
 
 sing-box supports loading multiple config files by repeating the `-c` option. This is useful for adding local settings to a downloaded remote config.

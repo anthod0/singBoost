@@ -77,8 +77,50 @@ fn loads_optional_subscription_config() {
             url: Some("https://example.com/config.json".to_string()),
             target: Some("remote.json".to_string()),
             timeout_secs: Some(10),
+            username: None,
+            password: None,
         })
     );
+}
+
+#[test]
+fn loads_basic_auth_credentials_without_trimming() {
+    let temp = tempfile::tempdir().unwrap();
+    let paths = AppPaths::new(temp.path().to_path_buf());
+    std::fs::write(
+        paths.config_toml(),
+        concat!(
+            "[sing_box]\nstart_command = 'sing-box run'\n",
+            "[subscription]\nusername = ' user '\npassword = ' p@ss:word '\n",
+        ),
+    )
+    .unwrap();
+
+    let subscription = load_config(&paths).unwrap().subscription.unwrap();
+    assert_eq!(subscription.username.as_deref(), Some(" user "));
+    assert_eq!(subscription.password.as_deref(), Some(" p@ss:word "));
+}
+
+#[test]
+fn rejects_incomplete_or_invalid_basic_auth_credentials() {
+    for credentials in [
+        "username = 'user'",
+        "password = 'secret'",
+        "username = ''\npassword = 'secret'",
+        "username = 'user:name'\npassword = 'secret'",
+    ] {
+        let temp = tempfile::tempdir().unwrap();
+        let paths = AppPaths::new(temp.path().to_path_buf());
+        std::fs::write(
+            paths.config_toml(),
+            format!("[sing_box]\nstart_command = 'sing-box run'\n[subscription]\n{credentials}\n"),
+        )
+        .unwrap();
+        assert!(matches!(
+            load_config(&paths),
+            Err(ConfigError::InvalidSubscriptionBasicAuth)
+        ));
+    }
 }
 
 #[test]
