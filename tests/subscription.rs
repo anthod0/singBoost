@@ -173,6 +173,44 @@ fn downloads_with_basic_auth_and_preserves_config_when_credentials_are_wrong() {
     }
 }
 
+#[test]
+fn timed_out_download_preserves_existing_config() {
+    let temp = tempfile::tempdir().unwrap();
+    let paths = AppPaths::new(temp.path().to_path_buf());
+    std::fs::write(paths.config_json(), "old").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let server = thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        stream
+            .set_read_timeout(Some(std::time::Duration::from_secs(5)))
+            .unwrap();
+        let mut request = Vec::new();
+        let mut byte = [0];
+        while !request.ends_with(b"\r\n\r\n") {
+            stream.read_exact(&mut byte).unwrap();
+            request.push(byte[0]);
+        }
+        thread::sleep(std::time::Duration::from_secs(2));
+        let _ = stream.write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\n{}");
+    });
+
+    let result = download_subscription(
+        &paths,
+        &SubscriptionConfig {
+            url: Some(format!("http://{addr}/config.json")),
+            target: Some("config.json".into()),
+            timeout_secs: Some(1),
+            username: None,
+            password: None,
+        },
+    );
+    server.join().unwrap();
+
+    assert!(matches!(result, Err(SubscriptionError::Download(_))));
+    assert_eq!(std::fs::read_to_string(paths.config_json()).unwrap(), "old");
+}
+
 fn spawn_http_server(body: &'static str) -> String {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let addr = listener.local_addr().unwrap();

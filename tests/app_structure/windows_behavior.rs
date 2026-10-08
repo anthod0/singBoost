@@ -15,7 +15,6 @@ fn windows_child_processes_are_hidden_unless_user_opens_log_window() {
     let process_rs = std::fs::read_to_string("src/windows_app/process.rs").unwrap();
     let tray_app = read_tray_app_sources();
     let autostart_rs = std::fs::read_to_string("src/windows_app/autostart.rs").unwrap();
-    let http_rs = std::fs::read_to_string("src/core/http.rs").unwrap();
 
     assert!(
         process_rs.contains("CREATE_NO_WINDOW") && process_rs.contains("hide_window"),
@@ -28,10 +27,6 @@ fn windows_child_processes_are_hidden_unless_user_opens_log_window() {
     assert!(
         autostart_rs.contains("hide_window("),
         "schtasks queries/updates should not flash console windows"
-    );
-    assert!(
-        http_rs.contains("CREATE_NO_WINDOW") && http_rs.contains("creation_flags"),
-        "shared HTTP PowerShell downloads should not flash console windows"
     );
 }
 

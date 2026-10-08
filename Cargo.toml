@@ -14,6 +14,7 @@ sha2 = "0.11.0"
 thiserror = "2.0.18"
 time = "0.3.47"
 toml = "1.1.2"
+ureq = "3.3.0"
 zip = { version = "8.6.0", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 
 [dev-dependencies]
@@ -21,9 +22,6 @@ tempfile = "3.27.0"
 
 [build-dependencies]
 winresource = "0.1.23"
-
-[target.'cfg(not(windows))'.dependencies]
-ureq = "3.3.0"
 
 [target."cfg(windows)".dependencies]
 tao = "0.35.3"
