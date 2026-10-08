@@ -1,3 +1,4 @@
+mod app_update;
 mod kernel;
 mod kernel_update;
 mod menu_actions;
@@ -5,6 +6,7 @@ mod ui_state;
 
 use crate::windows_app::autostart::autostart_enabled;
 use crate::windows_app::tray_menu::{TrayMenu, create_icon, create_menu};
+use singboost::core::app_update::{AppUpdate, PreparedAppUpdate};
 use singboost::{
     AppConfig, AppPaths, AppState, AppStateConfig, KernelUpdate, PreparedKernelUpdate, RuntimeLog,
 };
@@ -24,6 +26,8 @@ enum UserEvent {
     SubscriptionDownloadFinished(Result<PathBuf, String>),
     KernelUpdateChecked(Result<KernelUpdate, String>),
     KernelUpdatePrepared(Result<PreparedKernelUpdate, String>),
+    AppUpdateChecked(Result<AppUpdate, String>),
+    AppUpdatePrepared(Result<PreparedAppUpdate, String>),
 }
 
 pub(crate) struct TrayApp {
@@ -36,6 +40,7 @@ pub(crate) struct TrayApp {
     log_windows: Vec<Child>,
     subscription_downloading: bool,
     kernel_updating: bool,
+    app_updating: bool,
     menu: TrayMenu,
     _tray: Option<TrayIcon>,
 }
@@ -59,7 +64,7 @@ impl TrayApp {
             .with_icon(create_icon()?)
             .build()?;
 
-        let mut app = Self {
+        let app = Self {
             paths,
             config,
             state_config,
@@ -69,15 +74,18 @@ impl TrayApp {
             log_windows: Vec::new(),
             subscription_downloading: false,
             kernel_updating: false,
+            app_updating: false,
             menu: tray_menu,
             _tray: Some(tray),
         };
         app.update_menu();
-        app.start_kernel();
         Ok(app)
     }
 
-    pub(crate) fn run(mut self) -> ! {
+    pub(crate) fn run(
+        mut self,
+        mut startup: Option<crate::windows_app::app_update::UpdateStartup>,
+    ) -> ! {
         let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
         let proxy = event_loop.create_proxy();
         let menu_proxy = proxy.clone();
@@ -96,7 +104,17 @@ impl TrayApp {
                 *control_flow = ControlFlow::Wait;
             }
             match event {
-                Event::NewEvents(StartCause::Init) => {}
+                Event::NewEvents(StartCause::Init) => {
+                    if let Some(startup) = startup.take() {
+                        if let Err(error) = startup.acknowledge() {
+                            self.log(&format!(
+                                "SingBoost startup acknowledgement failed: {error}"
+                            ));
+                            self.exit();
+                        }
+                    }
+                    self.start_kernel();
+                }
                 Event::UserEvent(UserEvent::Menu(event)) => {
                     self.handle_menu(event.id().clone(), proxy.clone())
                 }
@@ -109,6 +127,12 @@ impl TrayApp {
                 }
                 Event::UserEvent(UserEvent::KernelUpdatePrepared(result)) => {
                     self.finish_kernel_update_prepare(result)
+                }
+                Event::UserEvent(UserEvent::AppUpdateChecked(result)) => {
+                    self.finish_app_update_check(result, proxy.clone())
+                }
+                Event::UserEvent(UserEvent::AppUpdatePrepared(result)) => {
+                    self.finish_app_update_prepare(result)
                 }
                 Event::MainEventsCleared => self.poll_kernel_exit(),
                 _ => {}

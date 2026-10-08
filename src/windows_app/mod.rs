@@ -1,5 +1,6 @@
 #![cfg(windows)]
 
+mod app_update;
 mod autostart;
 mod elevation;
 mod error_dialog;
@@ -15,6 +16,10 @@ use std::error::Error;
 use tray_app::TrayApp;
 
 pub fn run() -> Result<(), Box<dyn Error>> {
+    let startup_mode = app_update::handle_internal_mode()?;
+    if matches!(startup_mode, app_update::StartupMode::HelperFinished) {
+        return Ok(());
+    }
     let paths = AppPaths::from_current_exe()?;
     ensure_config_file(&paths)?;
     ensure_state_file(&paths)?;
@@ -29,5 +34,9 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     let _single_instance = single_instance::acquire()?;
     let _ = autostart::repair_autostart_if_stale(&state_config);
     let app = TrayApp::new(paths, config, state_config)?;
-    app.run();
+    let startup = match startup_mode {
+        app_update::StartupMode::Updated(startup) => Some(startup),
+        _ => None,
+    };
+    app.run(startup);
 }

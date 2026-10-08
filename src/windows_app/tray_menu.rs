@@ -16,6 +16,7 @@ pub(crate) const KERNEL_VERSION_ID: &str = "kernel_version";
 pub(crate) const UPDATE_KERNEL_ID: &str = "update_kernel";
 pub(crate) const ADMIN_ID: &str = "admin";
 pub(crate) const AUTOSTART_ID: &str = "autostart";
+pub(crate) const UPDATE_APP_ID: &str = "update_app";
 pub(crate) const ABOUT_ID: &str = "about";
 pub(crate) const EXIT_ID: &str = "exit";
 
@@ -26,6 +27,7 @@ pub(crate) struct TrayMenu {
     pub(crate) download_remote_config: MenuItem,
     pub(crate) kernel_version: MenuItem,
     pub(crate) update_kernel: MenuItem,
+    pub(crate) update_app: MenuItem,
     pub(crate) admin: CheckMenuItem,
     pub(crate) autostart: CheckMenuItem,
 }
@@ -71,6 +73,7 @@ pub(crate) fn create_menu(run_as_admin: bool, autostart: bool) -> (Menu, TrayMen
     .expect("create kernel submenu");
     let admin = CheckMenuItem::with_id(ADMIN_ID, "以管理员身份运行", true, run_as_admin, None);
     let autostart = CheckMenuItem::with_id(AUTOSTART_ID, "开机自启", true, autostart, None);
+    let update_app = MenuItem::with_id(UPDATE_APP_ID, "检查 SingBoost 更新", true, None);
     let about = MenuItem::with_id(ABOUT_ID, "关于", true, None);
     let exit = MenuItem::with_id(EXIT_ID, "退出", true, None);
     let settings_separator = PredefinedMenuItem::separator();
@@ -86,6 +89,7 @@ pub(crate) fn create_menu(run_as_admin: bool, autostart: bool) -> (Menu, TrayMen
         &admin,
         &autostart,
         &exit_separator,
+        &update_app,
         &about,
         &exit,
     ]);
@@ -98,6 +102,7 @@ pub(crate) fn create_menu(run_as_admin: bool, autostart: bool) -> (Menu, TrayMen
             download_remote_config,
             kernel_version,
             update_kernel,
+            update_app,
             admin,
             autostart,
         },

@@ -42,6 +42,23 @@ impl TrayApp {
             self.menu.update_kernel.set_text("检查内核更新");
             self.menu.update_kernel.set_enabled(true);
         }
+        self.menu.update_app.set_enabled(
+            !self.app_updating && !self.kernel_updating && !self.subscription_downloading,
+        );
+        self.menu.update_app.set_text(if self.app_updating {
+            "SingBoost 更新中..."
+        } else {
+            "检查 SingBoost 更新"
+        });
+        if self.app_updating {
+            self.menu.update_kernel.set_enabled(false);
+            self.menu.download_remote_config.set_enabled(false);
+            self.menu.admin.set_enabled(false);
+            self.menu.autostart.set_enabled(false);
+        } else {
+            self.menu.admin.set_enabled(true);
+            self.menu.autostart.set_enabled(true);
+        }
         self.menu.admin.set_checked(self.state_config.run_as_admin);
         self.menu.autostart.set_checked(autostart_enabled());
     }

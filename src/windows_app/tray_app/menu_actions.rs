@@ -6,7 +6,7 @@ use crate::windows_app::process::terminate_child;
 use crate::windows_app::show_info;
 use crate::windows_app::tray_menu::{
     ABOUT_ID, ADMIN_ID, AUTOSTART_ID, DOWNLOAD_REMOTE_CONFIG_ID, EXIT_ID, LOG_ID, OPEN_APP_DIR_ID,
-    OPEN_CONFIG_ID, OPEN_SING_BOX_CONFIG_ID, OPEN_UI_ID, RESTART_ID, START_STOP_ID,
+    OPEN_CONFIG_ID, OPEN_SING_BOX_CONFIG_ID, OPEN_UI_ID, RESTART_ID, START_STOP_ID, UPDATE_APP_ID,
     UPDATE_KERNEL_ID,
 };
 use singboost::{
@@ -20,6 +20,14 @@ use tray_icon::menu::MenuId;
 
 impl TrayApp {
     pub(super) fn handle_menu(&mut self, id: MenuId, event_proxy: EventLoopProxy<UserEvent>) {
+        if self.app_updating
+            && matches!(
+                id.as_ref(),
+                UPDATE_KERNEL_ID | DOWNLOAD_REMOTE_CONFIG_ID | ADMIN_ID | AUTOSTART_ID
+            )
+        {
+            return;
+        }
         match id.as_ref() {
             START_STOP_ID => match self.state {
                 AppState::Running => self.stop_kernel(),
@@ -34,6 +42,7 @@ impl TrayApp {
             OPEN_SING_BOX_CONFIG_ID => self.open_sing_box_config_file(),
             DOWNLOAD_REMOTE_CONFIG_ID => self.download_remote_config(event_proxy),
             UPDATE_KERNEL_ID => self.check_for_kernel_update(event_proxy),
+            UPDATE_APP_ID => self.check_for_app_update(event_proxy),
             ADMIN_ID => self.toggle_admin(),
             AUTOSTART_ID => self.toggle_autostart(),
             ABOUT_ID => self.show_about(),
@@ -217,7 +226,7 @@ impl TrayApp {
         }
     }
 
-    fn exit(&mut self) -> ! {
+    pub(super) fn exit(&mut self) -> ! {
         self.stop_kernel();
         for child in &mut self.log_windows {
             terminate_child(child);

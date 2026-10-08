@@ -1,3 +1,4 @@
+pub mod app_update;
 pub mod command;
 pub mod config;
 pub(crate) mod http;

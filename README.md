@@ -4,13 +4,12 @@ A minimal Windows launcher for the sing-box core.
 
 ## Features
 
+- Windows system tray icon
 - Start or stop the sing-box core
-- Quickly open the sing-box Web UI
-- View runtime logs
+- Open the sing-box Web UI
 - Configure startup on login
 - Download a complete remote sing-box JSON config on demand
 - Download or update the sing-box core from official stable releases
-- Windows system tray icon
 
 ## Non-goals
 
@@ -112,33 +111,3 @@ Clash API UI remains supported:
   }
 }
 ```
-
-## Tray Menu
-
-Left-click the tray icon to open the Web UI only when the sing-box core is running.
-
-Right-click for common actions:
-
-- Manage sing-box: start, stop, or restart the core.
-- Open the UI and logs.
-- Use configuration shortcuts.
-- Check, download, or update the sing-box core.
-- Toggle administrator mode.
-- Toggle startup on login. SingBoost uses a fixed Windows Task Scheduler task name and silently repairs an existing startup task if a portable upgrade moved or renamed the current executable.
-- Show About information.
-- Exit SingBoost and stop sing-box.
-
-## Logs
-
-SingBoost recreates the following file each time it starts:
-
-```text
-<your_app_dir>\logs\singboost-runtime.log
-```
-
-Log sources include:
-
-- sing-box standard output and standard error
-- SingBoost events and errors
-
-Click Logs in the tray menu to view live log output.
